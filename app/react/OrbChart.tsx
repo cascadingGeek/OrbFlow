@@ -1,9 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import {
-  OrbChart as OrbChartCore,
-  OrbChartConfig,
-  OrbDataInput,
-} from "../core/OrbChart";
+import { OrbChart as OrbChartCore } from "../core/OrbChart";
+import type { OrbChartConfig, OrbDataInput } from "../types/types";
 
 export interface OrbChartProps extends OrbChartConfig {
   data: OrbDataInput[];

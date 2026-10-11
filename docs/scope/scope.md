@@ -54,13 +54,13 @@ Decide the exact published shape so installs just work in every common bundler a
 **Done when:** `orbflow` and `orbflow/react` resolve with correct types in ESM, CommonJS, and TypeScript projects; the React entry does not duplicate the core; a size budget is recorded and checked in the build.
 - [x] Design it (spec): `/architect package build and exports`
 - [ ] Build it: `/develop package build and exports`
-   - [ ] Core thread on tsdown: Rollup removed, core ESM + CJS build, exports map, publint + attw + dist verifier, ESM smoke fixture green (AC-1, AC-2, AC-3, AC-5, AC-9, AC-10, AC-11)
+   - [x] Core thread on tsdown: Rollup removed, core ESM + CJS build, exports map, publint + attw + dist verifier, ESM smoke fixture green (AC-1, AC-2, AC-3, AC-5, AC-9, AC-10, AC-11)
    - [ ] React entry: shared chunk, `"use client"` banner, `./react` export, optional React peer (AC-1, AC-3, AC-4, AC-8)
    - [ ] CDN build: minified `window.OrbFlow` IIFE plus its checks (AC-6, AC-9)
    - [ ] Guards: size budgets, CommonJS, TypeScript, and bare fixtures, full `prepublishOnly` chain (AC-2, AC-7, AC-8, AC-10, AC-11)
 - [ ] Verify it: `/check verify package build and exports`
 - [ ] Test it: `/test package build and exports`
-Spec [0001](../specs/0001-package-build-exports.md)
+Spec [0001](../specs/0001-package-build-exports.md) · code in `tsdown.config.ts`, `package.json`, `scripts/`, `test/consumers/`, `app/index.ts`
 
 ## Slice 1: Production ready core and React
 

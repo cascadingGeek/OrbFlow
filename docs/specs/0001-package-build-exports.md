@@ -191,7 +191,7 @@ The other decisions follow from the adoption goal. Shipping ESM and CommonJS avo
 
 Before writing the budgets, step 1 of the build measures the current minified gzip size of the core and records it under *Baseline* below, so the 8 kB figure is grounded in a real number.
 
-**Baseline** (filled by `/develop` in build step 1): core minified gzip = _to be measured_.
+**Baseline** (filled by `/develop` in build step 1): core minified gzip = 3.55 kB (10.25 kB minified), measured with tsdown 0.23.1 on 2026-10-12.
 
 **Smoke fixtures** (`test/consumers/`, each a tiny private project with its own `package.json` and no lockfile):
 - `esm/`: `package.json` with `"type": "module"` and `react`/`react-dom` ^18 as dependencies. `index.mjs` imports both entries and asserts `typeof OrbChart === 'function'` for each, and that `globalThis.window` and `globalThis.document` are undefined after import (AC-1, AC-5).

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "tsdown-migrate": {
+      "source": "rolldown/tsdown",
+      "sourceType": "github",
+      "skillPath": "skills/tsdown-migrate/SKILL.md",
+      "computedHash": "ef840c62747ce5aed1e8b35197d767b022a690648f4a55d31e5e81ed8c21e0bd"
+    }
+  }
+}

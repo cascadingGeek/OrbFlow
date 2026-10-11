@@ -1,0 +1,9 @@
+dist/
+node_modules/
+coverage/
+package-lock.json
+docs/
+.claude/
+AGENTS.md
+CLAUDE.md
+skills-lock.json

@@ -129,8 +129,8 @@ export class CanvasRenderer {
     this.ctx.stroke();
 
     // 5. Draw image if available
-    if (orb.imageUrl && this.imageCache.has(orb.imageUrl)) {
-      const img = this.imageCache.get(orb.imageUrl)!;
+    const img = orb.imageUrl ? this.imageCache.get(orb.imageUrl) : undefined;
+    if (img) {
       const imgSize = r * 0.8;
 
       this.ctx.save();

@@ -13,6 +13,7 @@ A lightweight, physics-based orb chart package with smooth animations and realis
 - Customizable colors and styling
 
 ## Installation
+
 ```bash
 npm install orbflow
 # or
@@ -24,37 +25,39 @@ pnpm add orbflow
 ## Quick Start
 
 ### Vanilla JavaScript
-```javascript
-import OrbChart from 'orbflow';
 
-const chart = new OrbChart('#chart-container', {
+```javascript
+import OrbChart from "orbflow";
+
+const chart = new OrbChart("#chart-container", {
   width: 800,
   height: 600,
-  onOrbClick: (orb) => console.log('Clicked:', orb)
+  onOrbClick: (orb) => console.log("Clicked:", orb),
 });
 
 chart.setData([
-  { id: '1', label: 'Bitcoin', value: 45, color: '#f7931a' },
-  { id: '2', label: 'Ethereum', value: 30, color: '#627eea' },
-  { id: '3', label: 'Solana', value: 15, color: '#00d4aa' }
+  { id: "1", label: "Bitcoin", value: 45, color: "#f7931a" },
+  { id: "2", label: "Ethereum", value: 30, color: "#627eea" },
+  { id: "3", label: "Solana", value: 15, color: "#00d4aa" },
 ]);
 
 // chart.start() is called automatically if data is set, but can be controlled manually
 ```
 
 ### React
+
 ```tsx
-import { OrbChart } from 'orbflow/react';
+import { OrbChart } from "orbflow/react";
 
 function App() {
   const data = [
-    { id: '1', label: 'Bitcoin', value: 45, color: '#f7931a' },
-    { id: '2', label: 'Ethereum', value: 30, color: '#627eea' },
+    { id: "1", label: "Bitcoin", value: 45, color: "#f7931a" },
+    { id: "2", label: "Ethereum", value: 30, color: "#627eea" },
   ];
 
   return (
-    <div style={{ width: '800px', height: '600px' }}>
-      <OrbChart 
+    <div style={{ width: "800px", height: "600px" }}>
+      <OrbChart
         data={data}
         onOrbClick={(orb) => console.log(orb)}
         enableTooltip={true}
@@ -69,31 +72,32 @@ function App() {
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `width` | number | container width | Chart width in pixels |
-| `height` | number | container height | Chart height in pixels |
-| `minRadius` | number | 20 | Minimum orb radius |
-| `maxRadius` | number | 200 | Maximum orb radius |
-| `backgroundColor` | string | '#0a0e1a' | Canvas background color |
-| `colorScheme` | string[] | [...] | Default color palette |
-| `enableTooltip` | boolean | true | Show tooltips on hover |
-| `onOrbClick` | function | - | Click event handler |
-| `onOrbHover` | function | - | Hover event handler |
-| `damping` | number | 0.995 | Physics damping factor |
-| `minVelocity` | number | 0.1 | Minimum velocity before stopping |
-| `bounceCoefficient` | number | 0.8 | Bounce elasticity (0-1) |
-| `floatAmplitude` | number | 1.5 | Idle floating movement range |
-| `floatSpeed` | number | 0.001 | Idle floating speed |
+| Option              | Type     | Default          | Description                      |
+| ------------------- | -------- | ---------------- | -------------------------------- |
+| `width`             | number   | container width  | Chart width in pixels            |
+| `height`            | number   | container height | Chart height in pixels           |
+| `minRadius`         | number   | 20               | Minimum orb radius               |
+| `maxRadius`         | number   | 200              | Maximum orb radius               |
+| `backgroundColor`   | string   | '#0a0e1a'        | Canvas background color          |
+| `colorScheme`       | string[] | [...]            | Default color palette            |
+| `enableTooltip`     | boolean  | true             | Show tooltips on hover           |
+| `onOrbClick`        | function | -                | Click event handler              |
+| `onOrbHover`        | function | -                | Hover event handler              |
+| `damping`           | number   | 0.995            | Physics damping factor           |
+| `minVelocity`       | number   | 0.1              | Minimum velocity before stopping |
+| `bounceCoefficient` | number   | 0.8              | Bounce elasticity (0-1)          |
+| `floatAmplitude`    | number   | 1.5              | Idle floating movement range     |
+| `floatSpeed`        | number   | 0.001            | Idle floating speed              |
 
 ### Data Format (`OrbDataInput`)
+
 ```typescript
 interface OrbDataInput {
-  id: string;           // Unique identifier
-  label: string;        // Display label
-  value: number;        // Size value
-  color?: string;       // Orb color (optional)
-  imageUrl?: string;    // Image URL (optional)
+  id: string; // Unique identifier
+  label: string; // Display label
+  value: number; // Size value
+  color?: string; // Orb color (optional)
+  imageUrl?: string; // Image URL (optional)
   metadata?: Record<string, any>; // Custom data (optional)
 }
 ```

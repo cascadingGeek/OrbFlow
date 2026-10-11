@@ -1,7 +1,7 @@
 # 0001. Package build and exports for orbflow v1
 
 **Date**: 2026-10-11
-**Status**: Proposed
+**Status**: In Progress
 
 ## Summary
 

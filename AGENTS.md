@@ -22,6 +22,8 @@ npm run dev            # watch build
 npm run build          # build dist/
 npm test               # source tests (Jest), never reads dist/
 npm run lint           # ESLint
+npm run typecheck      # tsc --noEmit
+npm run format         # Prettier write (format:check to verify only)
 npm run check:package  # publint + attw + dist verifier (after build)
 npm run size           # size budgets (after build)
 npm run smoke          # pack tarball, install into consumer fixtures
@@ -49,6 +51,7 @@ Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`. Scope lives in `doc
 Chosen in /audit, installed by `/develop tooling` (scope feature 2):
 - Lint/format: ESLint 9 flat config + typescript-eslint + eslint-plugin-react-hooks, Prettier.
 - Pre-commit: lint + format + typecheck on staged files via a git hook.
+  (`simple-git-hooks` runs `lint-staged` then `npm run typecheck`; `npm install` installs the hook through `prepare`.)
 - Testing: unit + integration with a framework (Jest installed; `/test` sets up the runner), plus spec 0001's dist checks and smoke fixtures.
 - CI: GitHub Actions on push and PR running lint, typecheck, test, build, check:package.
 

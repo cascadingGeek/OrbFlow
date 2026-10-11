@@ -20,10 +20,12 @@ class SpatialGrid {
     const cellY = Math.floor(orb.y / this.cellSize);
     const key = `${cellX},${cellY}`;
 
-    if (!this.grid.has(key)) {
-      this.grid.set(key, []);
+    let cell = this.grid.get(key);
+    if (!cell) {
+      cell = [];
+      this.grid.set(key, cell);
     }
-    this.grid.get(key)!.push(orb);
+    cell.push(orb);
   }
 
   getNearby(orb: Orb): Orb[] {

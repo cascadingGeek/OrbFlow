@@ -1,2 +1,2 @@
-export * from './core/OrbChart';
-export * from './core/physics';
+export * from "./core/OrbChart";
+export * from "./core/physics";

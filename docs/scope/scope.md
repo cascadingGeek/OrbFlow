@@ -15,7 +15,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | A | Physics core and canvas renderer | Existing | in-progress |
 | B | React wrapper | Existing | in-progress |
 | 1 | Trim to vanilla and React | Foundation | done |
-| 2 | Coding standards and tooling | Foundation | planned |
+| 2 | Coding standards and tooling | Foundation | in-progress |
 | 3 | Package build and exports | Foundation | in-progress |
 | 4 | Production ready core lifecycle | Slice 1 | planned |
 | 5 | Production ready React component | Slice 1 | planned |
@@ -42,10 +42,12 @@ Remove everything that is not vanilla or React so v1 has one clear story. This i
 - [x] `/develop trim to vanilla and react`
 code in `app/`, `package.json`, `rollup.config.mjs`, `README.md`
 
-### 2. Coding standards and tooling
+### 2. Coding standards and tooling · in-progress
 Capture the project conventions, then make lint, tests, and version control actually work. Today `npm run lint` and `npm test` have no config behind them, there is no LICENSE file even though `package.json` ships one, and the folder is not a git repository.
 **Done when:** root `AGENTS.md` reflects the trimmed project; the folder is under version control with build output ignored; a LICENSE file exists; lint and the test runner run clean on an empty suite; `prepublishOnly` passes.
-- [ ] Capture conventions and tooling choices: `/audit`
+- [x] Capture conventions and tooling choices: `/audit`
+- [x] Build it: `/develop tooling`
+code in `eslint.config.mjs`, `jest.config.cjs`, `.prettierrc.json`, `.github/workflows/ci.yml`, `LICENSE`, `package.json`
 
 ### 3. Package build and exports · in-progress
 Decide the exact published shape so installs just work in every common bundler and in server rendered React. Covers module formats, the `exports` map (types first), whether the React entry reuses the core instead of bundling a second copy, tree shaking and side effects, and a bundle size budget.

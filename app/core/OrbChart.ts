@@ -219,5 +219,3 @@ export class OrbChart {
     }
   }
 }
-
-export default OrbChart;

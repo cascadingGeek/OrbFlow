@@ -13,7 +13,7 @@ export interface Orb {
   vy: number;
   color?: string;
   imageUrl?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PhysicsConfig {
@@ -42,5 +42,5 @@ export interface OrbDataInput {
   value: number;
   color?: string;
   imageUrl?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

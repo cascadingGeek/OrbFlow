@@ -1,5 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { OrbChart as OrbChartCore, OrbChartConfig, OrbDataInput } from '../core/OrbChart';
+import React, { useEffect, useRef } from "react";
+import {
+  OrbChart as OrbChartCore,
+  OrbChartConfig,
+  OrbDataInput,
+} from "../core/OrbChart";
 
 export interface OrbChartProps extends OrbChartConfig {
   data: OrbDataInput[];
@@ -54,9 +58,7 @@ export const OrbChart: React.FC<OrbChartProps> = ({
     <div
       ref={containerRef}
       className={className}
-      style={{ width: '100%', height: '100%', ...style }}
+      style={{ width: "100%", height: "100%", ...style }}
     />
   );
 };
-
-export default OrbChart;

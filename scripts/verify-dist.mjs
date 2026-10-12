@@ -31,11 +31,64 @@ async function checkSurface(file) {
   );
 }
 await checkSurface("index.mjs");
+await checkSurface("react.mjs");
 
-// Sourcemaps: every JavaScript file has a map with embedded sources (AC-9).
+// Duplication: the React entries import the core from a shared chunk and
+// carry no physics implementation of their own (AC-4).
+const physicsBody = /class PhysicsEngine\b|PhysicsEngine = class\b/;
+for (const file of ["react.mjs", "react.cjs"]) {
+  const code = readFileSync(join(dist, file), "utf8");
+  assert(!physicsBody.test(code), `${file} contains its own copy of the core`);
+  assert(
+    /["']\.\/chunk-[\w-]+\.(mjs|cjs)["']/.test(code),
+    `${file} does not import a shared chunk`,
+  );
+}
+
+// Directive: `"use client"` is line 1 of the React entries and nowhere else (AC-4).
+for (const file of jsFiles) {
+  const code = readFileSync(join(dist, file), "utf8");
+  const isReactEntry = file === "react.mjs" || file === "react.cjs";
+  if (isReactEntry) {
+    assert(
+      code.split("\n")[0].trim() === '"use client";',
+      `${file} does not start with "use client"`,
+    );
+  } else {
+    assert(
+      !/["']use client["']/.test(code),
+      `${file} contains a "use client" directive`,
+    );
+  }
+}
+
+// Sourcemaps: every JavaScript file with code of its own has a map with
+// embedded sources (AC-9). A pure re export entry (only import, export, and
+// require lines pointing at a chunk) has no original code, so the bundler
+// emits no map for it; the chunk it points to carries the map instead.
+const reExportLine = [
+  /^export \{[^}]*\} from "\.\/chunk-[\w-]+\.mjs";$/,
+  /^Object\.defineProperty\(exports, Symbol\.toStringTag, \{ value: "Module" \}\);$/,
+  /^const \w+ = require\("\.\/chunk-[\w-]+\.cjs"\);$/,
+  /^exports\.\w+ = \w+\.\w+;$/,
+];
+function isPureReExport(code) {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .every((line) => reExportLine.some((pattern) => pattern.test(line)));
+}
+
 for (const file of jsFiles) {
   const mapPath = join(dist, `${file}.map`);
-  assert(existsSync(mapPath), `${file} has no sourcemap`);
+  if (!existsSync(mapPath)) {
+    assert(
+      isPureReExport(readFileSync(join(dist, file), "utf8")),
+      `${file} has no sourcemap`,
+    );
+    continue;
+  }
   const map = JSON.parse(readFileSync(mapPath, "utf8"));
   const sources = map.sourcesContent;
   assert(

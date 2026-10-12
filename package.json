@@ -26,7 +26,24 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.mts",
+        "default": "./dist/react.mjs"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    },
     "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "react": [
+        "./dist/react.d.cts"
+      ]
+    }
   },
   "scripts": {
     "build": "tsdown",
@@ -64,7 +81,7 @@
   },
   "homepage": "https://github.com/cascadingGeek/orbflow#readme",
   "peerDependencies": {
-    "react": "^17.0.0 || ^18.0.0 || ^19.0.0"
+    "react": "^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -75,7 +92,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^9.39.5",
     "@types/jest": "^29.0.0",
-    "@types/react": "^18.0.0",
+    "@types/react": "^18.3.31",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -84,6 +101,8 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "publint": "^0.3.25",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "simple-git-hooks": "^2.14.0",
     "ts-jest": "^29.0.0",
     "tsdown": "0.23.1",

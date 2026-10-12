@@ -55,7 +55,7 @@ Decide the exact published shape so installs just work in every common bundler a
 - [x] Design it (spec): `/architect package build and exports`
 - [ ] Build it: `/develop package build and exports`
    - [x] Core thread on tsdown: Rollup removed, core ESM + CJS build, exports map, publint + attw + dist verifier, ESM smoke fixture green (AC-1, AC-2, AC-3, AC-5, AC-9, AC-10, AC-11)
-   - [ ] React entry: shared chunk, `"use client"` banner, `./react` export, optional React peer (AC-1, AC-3, AC-4, AC-8)
+   - [x] React entry: shared chunk, `"use client"` banner, `./react` export, optional React peer (AC-1, AC-3, AC-4, AC-8)
    - [ ] CDN build: minified `window.OrbFlow` IIFE plus its checks (AC-6, AC-9)
    - [ ] Guards: size budgets, CommonJS, TypeScript, and bare fixtures, full `prepublishOnly` chain (AC-2, AC-7, AC-8, AC-10, AC-11)
 - [ ] Verify it: `/check verify package build and exports`

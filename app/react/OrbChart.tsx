@@ -1,17 +1,18 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import type { CSSProperties, FC } from "react";
 import { OrbChart as OrbChartCore } from "../core/OrbChart";
 import type { OrbChartConfig, OrbDataInput } from "../types/types";
 
 export interface OrbChartProps extends OrbChartConfig {
   data: OrbDataInput[];
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }
 
 /**
  * React component wrapper for OrbChart
  */
-export const OrbChart: React.FC<OrbChartProps> = ({
+export const OrbChart: FC<OrbChartProps> = ({
   data,
   className,
   style,

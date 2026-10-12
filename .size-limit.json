@@ -1,0 +1,23 @@
+[
+  {
+    "name": "core",
+    "path": "dist/index.mjs",
+    "import": "{ OrbChart }",
+    "gzip": true,
+    "limit": "8 kB"
+  },
+  {
+    "name": "react",
+    "path": "dist/react.mjs",
+    "import": "{ OrbChart }",
+    "ignore": ["react", "react-dom"],
+    "gzip": true,
+    "limit": "9 kB"
+  },
+  {
+    "name": "cdn",
+    "path": "dist/orbflow.iife.js",
+    "gzip": true,
+    "limit": "8 kB"
+  }
+]

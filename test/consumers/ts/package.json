@@ -1,0 +1,12 @@
+{
+  "name": "orbflow-smoke-ts",
+  "private": true,
+  "scripts": {
+    "check": "tsc -p tsconfig.node10.json && tsc -p tsconfig.nodenext.json && tsc -p tsconfig.bundler.json"
+  },
+  "dependencies": {
+    "@types/react": "^18.0.0",
+    "react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

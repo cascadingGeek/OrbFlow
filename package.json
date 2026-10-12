@@ -10,6 +10,8 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.cts",
+  "unpkg": "./dist/orbflow.iife.js",
+  "jsdelivr": "./dist/orbflow.iife.js",
   "files": [
     "dist",
     "README.md",
@@ -93,6 +95,7 @@
     "@eslint/js": "^9.39.5",
     "@types/jest": "^29.0.0",
     "@types/react": "^18.3.31",
+    "es-check": "^9.8.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",

@@ -26,4 +26,18 @@ export default defineConfig([
         chunk.isEntry && chunk.name === "react" ? '"use client";' : "",
     }),
   },
+  // CDN build: minified core for a classic <script> tag, global `OrbFlow`.
+  {
+    entry: { orbflow: "app/index.ts" },
+    outDir: "dist",
+    // Never wipe the library build's output.
+    clean: false,
+    format: ["iife"],
+    globalName: "OrbFlow",
+    minify: true,
+    target: "es2020",
+    platform: "browser",
+    sourcemap: true,
+    dts: false,
+  },
 ]);

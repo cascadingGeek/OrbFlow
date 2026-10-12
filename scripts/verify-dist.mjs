@@ -1,10 +1,13 @@
 // Checks the built dist/ against spec 0001. Plain Node, exits non zero on
 // the first failure. Runs after `npm run build`, inside `check:package`.
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { runInContext, createContext } from "node:vm";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const dist = fileURLToPath(new URL("../dist/", import.meta.url));
+const root = fileURLToPath(new URL("..", import.meta.url));
+const dist = join(root, "dist");
 
 function fail(message) {
   console.error(`verify-dist: ${message}`);
@@ -98,5 +101,63 @@ for (const file of jsFiles) {
     `${file}.map is missing sourcesContent`,
   );
 }
+
+// Syntax level: every JavaScript file parses as ES2020 (AC-9).
+const esCheck = join(
+  root,
+  "node_modules",
+  "es-check",
+  "lib",
+  "cli",
+  "index.js",
+);
+function checkSyntax(files, extraArgs) {
+  if (files.length === 0) return;
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        esCheck,
+        "es2020",
+        ...files.map((f) => join(dist, f)),
+        "--checkFeatures",
+        "--noCache",
+        ...extraArgs,
+      ],
+      { stdio: "pipe" },
+    );
+  } catch (error) {
+    fail(
+      `ES2020 check failed for [${files.join(", ")}]\n${error.stdout ?? ""}${error.stderr ?? ""}`,
+    );
+  }
+}
+checkSyntax(
+  jsFiles.filter((f) => f.endsWith(".mjs")),
+  ["--module"],
+);
+checkSyntax(
+  jsFiles.filter((f) => !f.endsWith(".mjs")),
+  [],
+);
+
+// CDN global: the IIFE, run as a classic script, exposes
+// `window.OrbFlow.OrbChart` and no default export (AC-6).
+const iife = "orbflow.iife.js";
+assert(jsFiles.includes(iife), `${iife} is missing`);
+const window = {};
+window.window = window;
+createContext(window);
+runInContext(readFileSync(join(dist, iife), "utf8"), window, {
+  filename: iife,
+});
+assert(
+  typeof window.OrbFlow?.OrbChart === "function",
+  `${iife} does not expose window.OrbFlow.OrbChart`,
+);
+assert(
+  window.OrbFlow.default === undefined,
+  `${iife} exposes window.OrbFlow.default`,
+);
 
 console.log(`verify-dist: ${jsFiles.length} files OK`);

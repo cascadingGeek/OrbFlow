@@ -16,7 +16,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | B | React wrapper | Existing | in-progress |
 | 1 | Trim to vanilla and React | Foundation | done |
 | 2 | Coding standards and tooling | Foundation | done |
-| 3 | Package build and exports | Foundation | in-progress |
+| 3 | Package build and exports | Foundation | done |
 | 4 | Production ready core lifecycle | Slice 1 | planned |
 | 5 | Production ready React component | Slice 1 | planned |
 | 6 | Accessibility and reduced motion | Slice 2 | planned |
@@ -49,18 +49,18 @@ Capture the project conventions, then make lint, tests, and version control actu
 - [x] Build it: `/develop tooling`
 code in `eslint.config.mjs`, `jest.config.cjs`, `.prettierrc.json`, `.github/workflows/ci.yml`, `LICENSE`, `package.json`
 
-### 3. Package build and exports · in-progress
+### 3. Package build and exports · done
 Decide the exact published shape so installs just work in every common bundler and in server rendered React. Covers module formats, the `exports` map (types first), whether the React entry reuses the core instead of bundling a second copy, tree shaking and side effects, and a bundle size budget.
 **Done when:** `orbflow` and `orbflow/react` resolve with correct types in ESM, CommonJS, and TypeScript projects; the React entry does not duplicate the core; a size budget is recorded and checked in the build.
 - [x] Design it (spec): `/architect package build and exports`
-- [ ] Build it: `/develop package build and exports`
-   - [ ] Core thread on tsdown: Rollup removed, core ESM + CJS build, exports map, publint + attw + dist verifier, ESM smoke fixture green (AC-1, AC-2, AC-3, AC-5, AC-9, AC-10, AC-11)
-   - [ ] React entry: shared chunk, `"use client"` banner, `./react` export, optional React peer (AC-1, AC-3, AC-4, AC-8)
-   - [ ] CDN build: minified `window.OrbFlow` IIFE plus its checks (AC-6, AC-9)
-   - [ ] Guards: size budgets, CommonJS, TypeScript, and bare fixtures, full `prepublishOnly` chain (AC-2, AC-7, AC-8, AC-10, AC-11)
-- [ ] Verify it: `/check verify package build and exports`
-- [ ] Test it: `/test package build and exports`
-Spec [0001](../specs/0001-package-build-exports.md)
+- [x] Build it: `/develop package build and exports`
+   - [x] Core thread on tsdown: Rollup removed, core ESM + CJS build, exports map, publint + attw + dist verifier, ESM smoke fixture green (AC-1, AC-2, AC-3, AC-5, AC-9, AC-10, AC-11)
+   - [x] React entry: shared chunk, `"use client"` banner, `./react` export, optional React peer (AC-1, AC-3, AC-4, AC-8)
+   - [x] CDN build: minified `window.OrbFlow` IIFE plus its checks (AC-6, AC-9)
+   - [x] Guards: size budgets, CommonJS, TypeScript, and bare fixtures, full `prepublishOnly` chain (AC-2, AC-7, AC-8, AC-10, AC-11)
+- [x] Verify it: `/check verify package build and exports`
+- [x] Test it: `/test package build and exports`
+Spec [0001](../specs/0001-package-build-exports/index.md) · code in `tsdown.config.ts`, `package.json`, `scripts/`, `test/consumers/`, `app/index.ts`
 
 ## Slice 1: Production ready core and React
 

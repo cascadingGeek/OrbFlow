@@ -1,21 +1,11 @@
 # 0001. Package build and exports for orbflow v1
 
 **Date**: 2026-10-11
-**Status**: In Progress
+**Status**: Accepted
 
 ## Summary
 
 This spec decides how orbflow is built and published so `npm install orbflow` just works in vanilla projects, React apps, server rendered React (Next.js), TypeScript, and a plain `<script>` tag. The build moves from Rollup to tsdown (a fast, low config library bundler). It ships ESM and CommonJS (the two JavaScript module systems), a minified CDN file, and exact types for each. The React entry reuses the core instead of carrying its own copy. Automatic checks (publint, are-the-types-wrong, size-limit, and small consumer test projects) block any publish that would install broken.
-
-## Context
-
-orbflow is a zero dependency canvas bubble chart library. v1.0.0 targets vanilla JavaScript and React 18+ only, and its goal is adoption: a developer should install it and see a chart in minutes, in whatever setup they already have. The most common reason a new library gets abandoned on day one is not missing features. It's an install that fails to resolve, types that show red squiggles, or a crash in a server rendered React app.
-
-The current build (Rollup, `rollup.config.mjs`) has real problems. The React bundle compiles a second full copy of the core (`PhysicsEngine` appears inside `dist/react.esm.js`), so React users who also import from `orbflow` ship the core twice, and the two `OrbChart` classes are not the same class. `dist/index.d.ts` is not a bundled type file; it points at relative paths. The `exports` map lists `import`/`require` before `types` and still advertises Vue, Svelte, and Angular entries that point at `.d.ts` files. The core entry exports `PhysicsEngine` (and both a named and a default `OrbChart`), which would freeze internals into the 1.0 stability promise. There is no size budget, no package shape check, and nothing proves the published tarball works in a consumer project.
-
-Forces: the package must be safe under server rendering (no `window` or `document` at import time, and a `"use client"` marker for React Server Components). It must keep the "lightweight" claim honest as later features (lifecycle, accessibility, touch) add code. The team is one developer, so the build must be small to own and must fail loudly instead of silently shipping a broken package. Anything exported in 1.0 must stay stable until 2.0, while Vue, Svelte, and Angular arrive later as additive minor releases (1.1, 1.2, 1.3).
-
-Prerequisite: scope feature 1 (trim to vanilla and React) removes the Vue, Svelte, and Angular sources and package fields. This spec assumes it has landed, or lands as the first step of this build.
 
 ## Requirements
 
@@ -38,44 +28,6 @@ Prerequisite: scope feature 1 (trim to vanilla and React) removes the Vue, Svelt
 - **AC-10**: `npm run smoke` packs the real tarball and installs it into three fixture projects (ESM, CommonJS, TypeScript). Each one imports both entries and passes, and any failure exits non zero.
 - **AC-11**: `prepublishOnly` runs lint, source tests, build, package checks (publint, attw, and the `dist/` verifier), size, and smoke in that order, and any failure blocks `npm publish`. `package.json` declares `"sideEffects": false`.
 
-## Options considered
-
-### Option 1: Keep Rollup and rewrite the config
-
-Fix the existing Rollup setup: one multi input build for ESM and CommonJS with a shared chunk, `rollup-plugin-dts` per entry and format, a separate IIFE config, and a per chunk banner for `"use client"`.
-
-**Pros**:
-- Already installed and extremely mature; every output need here is a known Rollup recipe.
-- Full control over chunk naming, banners, and plugins.
-
-**Cons**:
-- Four or more config blocks plus several plugins (TypeScript, dts, resolve, commonjs, terser) to keep in sync; the current broken config shows how easy that is to get wrong.
-- Producing separate `.d.mts` and `.d.cts` type files needs extra manual wiring.
-
-### Option 2: tsdown
-
-A library bundler built on Rolldown (a Rust port of Rollup's design). One config file emits ESM, CommonJS, and IIFE builds, bundled `.d.mts`/`.d.cts` types, and sourcemaps, with code splitting between entries.
-
-**Pros**:
-- Far less config to own; dual format types and fixed extensions are built in.
-- Very fast builds, which keeps the check pipeline (build, attw, size, smoke) quick.
-- Rolldown keeps Rollup's plugin and output option model, so per chunk banners and naming are still available.
-
-**Cons**:
-- Younger and still moving quickly (pre 1.0 at the time of writing), so minor upgrades can change behavior.
-- Fewer answered questions online when something odd happens.
-
-### Option 3: tsup
-
-The esbuild based library bundler many packages use today.
-
-**Pros**:
-- Simple, widely used, lots of examples.
-
-**Cons**:
-- Its maintainers now direct new users to other tools, so it's a weak foundation for a package meant to last years.
-- Code splitting for CommonJS is limited, which works against the shared chunk requirement (AC-4).
-
 ## Decision
 
 **Chosen option**: Option 2: tsdown
@@ -83,14 +35,6 @@ The esbuild based library bundler many packages use today.
 Build orbflow with tsdown from a single `tsdown.config.ts`, emitting ESM + CommonJS with a shared core chunk and per format bundled types, plus a separate minified IIFE build, guarded by publint, are-the-types-wrong, a `dist/` verifier, size-limit, and packed tarball smoke tests.
 
 **Implementation skills**: `tsdown-migrate` (`rolldown/tsdown`, `.claude/skills/tsdown-migrate/`). It's written for tsup to tsdown, but its option defaults (for example `clean` on by default, IIFE naming as `[name].iife.js`) and its Node runtime requirement apply here.
-
-## Rationale
-
-The real risk for a v1 launch is an install that silently breaks for some consumers, not build speed. tsdown makes the hardest correctness requirements (separate ESM and CommonJS type files, fixed extensions, a shared chunk across entries) its defaults instead of hand wiring. That directly removes the class of mistakes the current Rollup config already contains. For a solo maintainer, a dozen lines of config are worth more than the full control Rollup offers.
-
-I had recommended keeping Rollup, because it's the more proven choice. tsdown is a reasonable pick with one tradeoff you should accept on purpose: it's young. That risk is contained in three ways. The version is pinned exactly, not with a caret. Every build is checked from the outside (publint and attw inspect the published shape, size-limit measures the real output, and the smoke fixtures install the real tarball), so a bad tsdown upgrade fails the check instead of reaching npm. And because Rolldown follows Rollup's output model, falling back to Rollup later is a config rewrite, not a code change.
-
-The other decisions follow from the adoption goal. Shipping ESM and CommonJS avoids failing in test runners and older setups that still `require()`. The CDN global build serves vanilla users who try things in CodePen or a plain HTML file. A named only, minimal API (no `PhysicsEngine`, no default export) keeps the 1.0 promise small and avoids the `require('orbflow').default` trap. Fixed `.mjs`/`.cjs` extensions make every file's format obvious regardless of the consumer's setup.
 
 ## Package design
 
@@ -191,7 +135,7 @@ The other decisions follow from the adoption goal. Shipping ESM and CommonJS avo
 
 Before writing the budgets, step 1 of the build measures the current minified gzip size of the core and records it under *Baseline* below, so the 8 kB figure is grounded in a real number.
 
-**Baseline** (filled by `/develop` in build step 1): core minified gzip = _to be measured_.
+**Baseline** (filled by `/develop` in build step 1): core minified gzip = 3.55 kB (10.25 kB minified), measured with tsdown 0.23.1 on 2026-10-12.
 
 **Smoke fixtures** (`test/consumers/`, each a tiny private project with its own `package.json` and no lockfile):
 - `esm/`: `package.json` with `"type": "module"` and `react`/`react-dom` ^18 as dependencies. `index.mjs` imports both entries and asserts `typeof OrbChart === 'function'` for each, and that `globalThis.window` and `globalThis.document` are undefined after import (AC-1, AC-5).
@@ -269,3 +213,5 @@ Tracer Bullet: get one thin, real path from source to an installed tarball worki
 - [ ] Feature 11 (release pipeline) should run `prepublishOnly`'s chain in CI and reuse `npm run smoke` before publishing.
 - [ ] `tsdown-migrate` (installed in `.claude/skills/`) is not yet listed in root `AGENTS.md` `## Agent skills`; it's project wide build tooling, so it belongs at root. `/audit` (feature 2) can record it, along with the declined skills: antfu/skills tsdown, the publint and size-limit skills.
 - [ ] Features 4, 6, and 7 must stay within the 8 kB core budget; if one cannot, revisit the budget deliberately in this spec instead of raising the limit quietly.
+
+Decision history (context, options considered, rationale) lives in [rationale.md](./rationale.md).

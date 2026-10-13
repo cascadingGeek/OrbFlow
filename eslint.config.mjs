@@ -34,5 +34,10 @@ export default tseslint.config(
     files: ["**/*.{js,mjs,cjs}"],
     languageOptions: { globals: globals.node },
   },
+  {
+    // CommonJS files (configs, the cjs smoke fixture) load with require().
+    files: ["**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   prettier,
 );

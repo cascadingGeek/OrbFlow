@@ -1,14 +1,11 @@
 import { PhysicsEngine } from "./physics";
 import { CanvasRenderer } from "../renderer/CanvasRenderer";
-import {
+import type {
   Orb,
   OrbChartConfig,
   OrbDataInput,
   PhysicsConfig,
 } from "../types/types";
-
-// Re-export common types for consumers
-export { Orb, PhysicsConfig, OrbChartConfig, OrbDataInput };
 
 /**
  * Main OrbChart class - framework agnostic with bubble styling

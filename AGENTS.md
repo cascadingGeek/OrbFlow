@@ -6,7 +6,7 @@ Physics based bubble (orb) chart library on canvas, zero runtime dependencies. v
 
 - **Language / Runtime**: TypeScript 5 (`strict`), output ES2020 for browsers; build machine Node 22.18+ or 24.11+, consumers `engines.node >=18`
 - **Framework**: none in core; React 18/19 as an optional peer for `orbflow/react`
-- **Build**: tsdown, exact pinned (spec 0001), ESM + CJS with a shared core chunk, `.d.mts`/`.d.cts` types, minified IIFE (`window.OrbFlow`). Replaces Rollup (feature 3 in progress)
+- **Build**: tsdown, exact pinned (spec 0001), ESM + CJS with a shared core chunk, `.d.mts`/`.d.cts` types, minified IIFE (`window.OrbFlow`). Config in `tsdown.config.ts` (replaced Rollup in feature 3)
 - **Package checks**: publint, `@arethetypeswrong/cli`, size-limit (core 8 kB, react 9 kB, cdn 8 kB gzip), `scripts/verify-dist.mjs`, smoke fixtures in `test/consumers/`
 - **Package manager**: npm
 
@@ -28,11 +28,11 @@ npm run check:package  # publint + attw + dist verifier (after build)
 npm run size           # size budgets (after build)
 npm run smoke          # pack tarball, install into consumer fixtures
 ```
-`prepublishOnly` runs lint, test, build, check:package, size, smoke in that order.
+`prepublishOnly` runs lint, typecheck, test, build, check:package, size, smoke in that order.
 
 ## Specs
 
-Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`. Scope lives in `docs/scope/scope.md`.
+Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`, or a folder `docs/specs/NNNN-title/` holding `index.md` (build spec), `rationale.md`, and `verify.md` (verify steps). Scope lives in `docs/scope/scope.md`.
 
 ## Rules
 
@@ -53,6 +53,7 @@ Chosen in /audit, installed by `/develop tooling` (scope feature 2):
 - Pre-commit: lint + format + typecheck on staged files via a git hook.
   (`simple-git-hooks` runs `lint-staged` then `npm run typecheck`; `npm install` installs the hook through `prepare`.)
 - Testing: unit + integration with a framework (Jest installed; `/test` sets up the runner), plus spec 0001's dist checks and smoke fixtures.
+  (Jest + ts-jest, tests beside the source as `*.test.ts(x)`, choices in `test-preferences.json`. DOM tests opt in with a `@jest-environment jsdom` docblock and use the fakes in `app/test-support/fakeDom.ts` (2D canvas, ResizeObserver, animation frames). A known, unfixed bug is kept as an `it.failing` test with a comment until it is fixed.)
 - CI: GitHub Actions on push and PR running lint, typecheck, test, build, check:package.
 
 ## Git
@@ -70,5 +71,6 @@ Declined: antfu/skills tsdown, publint skill, size-limit skill
 ## Context files
 
 <!-- Nested AGENTS.md files are listed here as they are created -->
+- [test/consumers/AGENTS.md](test/consumers/AGENTS.md): smoke fixtures that install the packed tarball (how to add one)
 
 _Drafted by /audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._

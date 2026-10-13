@@ -305,9 +305,7 @@ describe("OrbChart (vanilla)", () => {
       expect(tooltipOf()?.style.opacity).toBe("0");
     });
 
-    // Known bug (XSS): the tooltip builds innerHTML from labels and
-    // metadata. Remove `.failing` once fixed.
-    it.failing("shows orb labels in the tooltip as text, never as HTML", () => {
+    it("shows orb labels in the tooltip as text, never as HTML", () => {
       const chart = new OrbChart(container, { minRadius: 25 });
       chart.setData([
         { id: "x", label: '<img src="x" onerror="alert(1)">', value: 1 },
@@ -317,6 +315,23 @@ describe("OrbChart (vanilla)", () => {
 
       expect(tooltipOf()?.querySelector("img")).toBeNull();
       expect(tooltipOf()?.textContent).toContain('<img src="x"');
+    });
+
+    it("shows a metadata category in the tooltip as text, never as HTML", () => {
+      const chart = new OrbChart(container, { minRadius: 25 });
+      chart.setData([
+        {
+          id: "x",
+          label: "Safe",
+          value: 1,
+          metadata: { category: "<b onmouseover=alert(1)>Bold</b>" },
+        },
+      ]);
+
+      dispatchMouse(canvasOf(), "mousemove", 200, 150);
+
+      expect(tooltipOf()?.querySelector("b")).toBeNull();
+      expect(tooltipOf()?.textContent).toContain("<b onmouseover=alert(1)>");
     });
 
     it("creates no tooltip when enableTooltip is false", () => {

@@ -4,7 +4,10 @@ export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private container: HTMLElement;
+  // Only images that finished loading; drawImage throws on a broken image.
   private imageCache: Map<string, HTMLImageElement> = new Map();
+  // Every URL ever requested, so a slow or broken one is fetched only once.
+  private requestedImages: Set<string> = new Set();
   private tooltipElement: HTMLDivElement | null = null;
   private config: OrbChartConfig;
   private hoveredOrb: Orb | null = null;
@@ -190,14 +193,14 @@ export class CanvasRenderer {
   }
 
   private loadImage(url: string) {
-    if (!this.imageCache.has(url)) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => this.imageCache.set(url, img);
-      img.onerror = () => console.warn(`Failed to load: ${url}`);
-      img.src = url;
-      this.imageCache.set(url, img);
-    }
+    if (this.requestedImages.has(url)) return;
+    this.requestedImages.add(url);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => this.imageCache.set(url, img);
+    img.onerror = () => console.warn(`Failed to load: ${url}`);
+    img.src = url;
   }
 
   private createTooltip() {
@@ -257,11 +260,23 @@ export class CanvasRenderer {
 
     if (this.tooltipElement && this.config.enableTooltip) {
       if (orb) {
-        this.tooltipElement.innerHTML = `
-          <div style="font-weight: 600; margin-bottom: 2px;">${orb.label}</div>
-          <div style="font-size: 12px; opacity: 0.8;">Value: ${orb.value}</div>
-          ${orb.metadata?.category ? `<div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">${orb.metadata.category}</div>` : ""}
-        `;
+        // Orb data is user supplied: set it as text, never as HTML.
+        const lines = [
+          this.tooltipLine(orb.label, "font-weight: 600; margin-bottom: 2px;"),
+          this.tooltipLine(
+            `Value: ${orb.value}`,
+            "font-size: 12px; opacity: 0.8;",
+          ),
+        ];
+        if (orb.metadata?.category) {
+          lines.push(
+            this.tooltipLine(
+              String(orb.metadata.category),
+              "font-size: 11px; opacity: 0.6; margin-top: 2px;",
+            ),
+          );
+        }
+        this.tooltipElement.replaceChildren(...lines);
 
         // Prevent tooltip clipping
         const tipRect = this.tooltipElement.getBoundingClientRect();
@@ -278,6 +293,13 @@ export class CanvasRenderer {
         this.tooltipElement.style.opacity = "0";
       }
     }
+  }
+
+  private tooltipLine(text: string, style: string): HTMLDivElement {
+    const line = document.createElement("div");
+    line.style.cssText = style;
+    line.textContent = text;
+    return line;
   }
 
   private handleMouseLeave() {
@@ -310,5 +332,6 @@ export class CanvasRenderer {
     }
     this.canvas.remove();
     this.imageCache.clear();
+    this.requestedImages.clear();
   }
 }

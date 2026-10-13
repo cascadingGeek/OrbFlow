@@ -94,23 +94,57 @@ describe("CanvasRenderer", () => {
     expect(calls("arc")).toHaveLength(0);
   });
 
-  // Known bug: images are cached before they load, and drawImage on a broken
-  // image throws and stops the loop. Remove `.failing` once fixed.
-  it.failing(
-    "does not draw an orb image before it has finished loading",
-    () => {
+  describe("orb images", () => {
+    let images: HTMLImageElement[];
+
+    beforeEach(() => {
+      images = [];
+      jest.spyOn(window, "Image").mockImplementation(() => {
+        const img = document.createElement("img");
+        images.push(img);
+        return img;
+      });
+      jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    });
+
+    const imageOrb = makeOrb({ imageUrl: "https://example.com/logo.png" });
+
+    it("does not draw an orb image before it has finished loading", () => {
       const renderer = new CanvasRenderer(container, {});
       renderer.updateDimensions(300, 200);
-      const orb = makeOrb({ imageUrl: "https://example.com/logo.png" });
-      renderer.preloadImages([orb]);
+      renderer.preloadImages([imageOrb]);
 
-      // jsdom never fetches the image, like a slow or broken URL in a browser,
-      // where drawImage on a broken image throws and stops the render loop.
-      renderer.render([orb]);
+      // In a browser, drawImage on a broken image throws and stops the loop.
+      renderer.render([imageOrb]);
 
       expect(calls("drawImage")).toHaveLength(0);
-    },
-  );
+    });
+
+    it("draws the image once it has loaded", () => {
+      const renderer = new CanvasRenderer(container, {});
+      renderer.updateDimensions(300, 200);
+      renderer.preloadImages([imageOrb]);
+
+      images[0].onload?.(new Event("load"));
+      renderer.render([imageOrb]);
+
+      expect(calls("drawImage")).toHaveLength(1);
+      expect(calls("drawImage")[0].args[0]).toBe(images[0]);
+    });
+
+    it("never draws a broken image and requests it only once", () => {
+      const renderer = new CanvasRenderer(container, {});
+      renderer.updateDimensions(300, 200);
+
+      renderer.render([imageOrb]);
+      images[0].onerror?.(new Event("error"));
+      renderer.render([imageOrb]);
+      renderer.render([imageOrb]);
+
+      expect(calls("drawImage")).toHaveLength(0);
+      expect(images).toHaveLength(1);
+    });
+  });
 
   it("removes its canvas and tooltip on destroy", () => {
     const renderer = new CanvasRenderer(container, { enableTooltip: true });

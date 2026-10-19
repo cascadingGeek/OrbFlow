@@ -153,4 +153,85 @@ describe("CanvasRenderer", () => {
 
     expect(container.children).toHaveLength(0);
   });
+
+  describe("float phase", () => {
+    const circleYs = (phaseOf?: (orb: Orb) => number) => {
+      const renderer = new CanvasRenderer(container, {
+        floatAmplitude: 10,
+        floatSpeed: 1,
+      });
+      renderer.updateDimensions(300, 200);
+      const ctx = contexts[contexts.length - 1];
+      ctx.calls.length = 0;
+      renderer.render([makeOrb()], 1, phaseOf);
+      return ctx.calls.find((c) => c.method === "arc")?.args[1];
+    };
+
+    it("offsets the float by the orb's own phase, not its index", () => {
+      const noPhase = circleYs();
+      const shifted = circleYs(() => 1);
+
+      expect(noPhase).toBeCloseTo(100 + 10 * Math.sin(1));
+      expect(shifted).toBeCloseTo(100 + 10 * Math.sin(2));
+    });
+
+    it("draws the same orb at the same height wherever it sits in the list", () => {
+      const renderer = new CanvasRenderer(container, {
+        floatAmplitude: 10,
+        floatSpeed: 1,
+      });
+      renderer.updateDimensions(300, 200);
+      const phaseOf = (orb: Orb) => (orb.id === "b" ? 0.7 : 0);
+      const b = makeOrb({ id: "b" });
+
+      contexts[0].calls.length = 0;
+      renderer.render([makeOrb({ id: "a" }), b], 5, phaseOf);
+      // Three arcs per bubble, so the second orb's base circle is the fourth.
+      const secondSlot = calls("arc")[3].args[1];
+      contexts[0].calls.length = 0;
+      renderer.render([b], 5, phaseOf);
+      const firstSlot = calls("arc")[0].args[1];
+
+      expect(secondSlot).toBeCloseTo(firstSlot as number);
+    });
+  });
+
+  describe("construction and teardown", () => {
+    it("exposes its canvas for the input layer", () => {
+      const renderer = new CanvasRenderer(container, {});
+
+      expect(renderer.element).toBe(canvas());
+    });
+
+    it("throws and leaves the container empty when there is no 2D context", () => {
+      jest
+        .spyOn(HTMLCanvasElement.prototype, "getContext")
+        .mockReturnValue(null);
+
+      expect(() => new CanvasRenderer(container, {})).toThrow("canvas context");
+      expect(container.children).toHaveLength(0);
+    });
+
+    it("clears pending image callbacks on destroy so a late load does nothing", () => {
+      const images: HTMLImageElement[] = [];
+      jest.spyOn(window, "Image").mockImplementation(() => {
+        const img = document.createElement("img");
+        images.push(img);
+        return img;
+      });
+      const warn = jest
+        .spyOn(console, "warn")
+        .mockImplementation(() => undefined);
+      const renderer = new CanvasRenderer(container, {});
+      renderer.preloadImages([
+        makeOrb({ imageUrl: "https://example.com/a.png" }),
+      ]);
+
+      renderer.destroy();
+
+      expect(images[0].onload).toBeNull();
+      expect(images[0].onerror).toBeNull();
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
 });

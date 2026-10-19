@@ -1,10 +1,16 @@
 import { PhysicsEngine } from "./physics";
 import { CanvasRenderer } from "../renderer/CanvasRenderer";
+import { CanvasInput } from "../renderer/CanvasInput";
+import { AnimationLoop } from "./AnimationLoop";
+import { ConfigResolver, type ResolvedConfig } from "./ConfigResolver";
+import { DataValidator } from "./DataValidator";
+import { OrbReconciler } from "./OrbReconciler";
+import { RadiusTweener } from "./RadiusTweener";
 import type {
   Orb,
   OrbChartConfig,
   OrbDataInput,
-  PhysicsConfig,
+  OrbDataIssue,
 } from "../types/types";
 
 /**
@@ -12,27 +18,20 @@ import type {
  */
 export class OrbChart {
   private container: HTMLElement;
-  private physicsEngine: PhysicsEngine;
-  private renderer: CanvasRenderer;
+  private physicsEngine!: PhysicsEngine;
+  private renderer!: CanvasRenderer;
+  private input!: CanvasInput;
+  private loop: AnimationLoop;
+  private tweener: RadiusTweener;
+  private reconciler: OrbReconciler;
+  private validator = new DataValidator();
+  private resolver = new ConfigResolver();
   private orbs: Orb[] = [];
-  private animationFrameId: number | null = null;
-  private isPlaying: boolean = true;
-  private startTime: number = Date.now();
-
-  private config: Required<Omit<OrbChartConfig, keyof PhysicsConfig>> &
-    PhysicsConfig;
-
-  // Cool color palette (Blues, Cyans, Purples)
-  private readonly defaultColors = [
-    "#3b82f6", // blue-500
-    "#06b6d4", // cyan-500
-    "#8b5cf6", // violet-500
-    "#6366f1", // indigo-500
-    "#0ea5e9", // sky-500
-    "#a855f7", // purple-500
-    "#22d3ee", // cyan-400
-    "#818cf8", // indigo-400
-  ];
+  private startTime: number;
+  private destroyed = false;
+  // Undo steps in the order resources were created; run in reverse.
+  private teardown: (() => void)[] = [];
+  private config: ResolvedConfig;
 
   constructor(container: HTMLElement | string, config: OrbChartConfig = {}) {
     // Get container element
@@ -44,93 +43,87 @@ export class OrbChart {
       this.container = container;
     }
 
-    // Setup config with defaults - smaller bubbles
-    this.config = {
-      width: config.width ?? this.container.clientWidth,
-      height: config.height ?? this.container.clientHeight,
-      backgroundColor: config.backgroundColor ?? "#0a0e1a",
-      minRadius: config.minRadius ?? 25,
-      maxRadius: config.maxRadius ?? 80,
-      colorScheme: config.colorScheme ?? this.defaultColors,
-      enableTooltip: config.enableTooltip ?? true,
-      onOrbClick: config.onOrbClick ?? (() => {}),
-      onOrbHover: config.onOrbHover ?? (() => {}),
-      damping: config.damping,
-      minVelocity: config.minVelocity,
-      bounceCoefficient: config.bounceCoefficient,
-      floatAmplitude: config.floatAmplitude ?? 2.0,
-      floatSpeed: config.floatSpeed ?? 0.002,
-    };
-
-    // Initialize Renderer
-    this.renderer = new CanvasRenderer(this.container, this.config);
-
-    // Setup mouse repulsion handler
-    this.renderer.setCanvasClickHandler((x, y) => {
-      this.physicsEngine.applyMouseRepulsion(this.orbs, x, y, 150);
+    this.config = this.resolver.resolve(config, {
+      width: this.container.clientWidth,
+      height: this.container.clientHeight,
     });
+    this.loop = new AnimationLoop((now) => this.frame(now));
+    this.startTime = this.loop.now();
+    this.reconciler = new OrbReconciler(
+      (this.tweener = new RadiusTweener((orb) =>
+        this.reconciler.forget(orb.id),
+      )),
+    );
 
-    // Initialize physics engine
+    try {
+      this.mount();
+    } catch (error) {
+      this.runTeardown();
+      throw error;
+    }
+  }
+
+  private mount() {
+    this.renderer = new CanvasRenderer(this.container, this.config);
+    this.teardown.push(() => this.renderer.destroy());
+
+    this.input = new CanvasInput(
+      this.renderer.element,
+      this.container,
+      () => this.config,
+      (x, y) => this.physicsEngine.applyMouseRepulsion(this.orbs, x, y, 150),
+    );
+    this.teardown.push(() => this.input.dispose());
+
     this.physicsEngine = new PhysicsEngine(
       this.config.width,
       this.config.height,
       this.config,
     );
 
-    // Setup event listeners
-    this.handleResize();
-
-    // Setup resize observer
     const resizeObserver = new ResizeObserver(() => this.handleResize());
+    this.teardown.push(() => resizeObserver.disconnect());
     resizeObserver.observe(this.container);
+
+    this.handleResize();
   }
 
   /**
-   * Load data and initialize orbs
+   * Load data. Orbs are matched by `id`: existing ones keep their place and
+   * animate to their new size, new ones grow in, missing ones shrink out. Bad
+   * entries are skipped and reported, never thrown.
    */
   setData(data: OrbDataInput[]) {
-    if (!data || data.length === 0) {
-      this.orbs = [];
-      return;
-    }
+    if (this.destroyed) return;
 
-    // Calculate min/max values for radius scaling
-    const values = data.map((d) => d.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const { accepted, issues, notArray } = this.validator.validate(data);
+    if (notArray) console.warn("OrbFlow: setData expects an array, got none.");
 
-    // Create orbs with random initial positions
-    this.orbs = data.map((item, index) => {
-      const normalizedValue =
-        (item.value - minValue) / (maxValue - minValue || 1);
-      // Linear scaling directly proportional to value
-      const radius =
-        this.config.minRadius +
-        normalizedValue * (this.config.maxRadius - this.config.minRadius);
-
-      return {
-        id: item.id,
-        label: item.label,
-        value: item.value,
-        radius,
-        x: Math.random() * (this.config.width - radius * 2) + radius,
-        y: Math.random() * (this.config.height - radius * 2) + radius,
-        vx: (Math.random() - 0.5) * 1,
-        vy: (Math.random() - 0.5) * 1,
-        color:
-          item.color ??
-          this.config.colorScheme[index % this.config.colorScheme.length],
-        imageUrl: item.imageUrl,
-        metadata: item.metadata,
-      };
-    });
-
-    // Preload images in renderer
+    const now = this.loop.now();
+    this.orbs = this.reconciler.reconcile(
+      this.orbs,
+      accepted,
+      this.config,
+      now,
+    );
+    this.settle(now);
     this.renderer.preloadImages(this.orbs);
+    this.loop.start();
+    this.reportIssues(issues);
+  }
 
-    // Start animation if playing
-    if (this.isPlaying) {
-      this.start();
+  private reportIssues(issues: OrbDataIssue[]) {
+    if (issues.length === 0) return;
+    console.warn(
+      `OrbFlow: skipped ${issues.length} invalid data ${
+        issues.length === 1 ? "entry" : "entries"
+      }.`,
+      issues,
+    );
+    try {
+      this.config.onDataIssue(issues);
+    } catch (error) {
+      console.error("OrbFlow: onDataIssue handler threw.", error);
     }
   }
 
@@ -145,74 +138,88 @@ export class OrbChart {
 
     this.renderer.updateDimensions(rect.width, rect.height);
     this.physicsEngine.updateDimensions(rect.width, rect.height);
+    this.reconciler.placeAwaiting(rect.width, rect.height);
   }
 
-  private render() {
-    // Update physics
-    if (this.isPlaying) {
-      this.orbs = this.physicsEngine.update(this.orbs);
-    }
+  /** Advances tweens, drops exited orbs, and clears a stale hover. */
+  private settle(now: number) {
+    this.orbs = this.tweener.step(this.orbs, now);
+    this.input.sync(this.orbs.filter((orb) => !this.tweener.isExiting(orb)));
+  }
 
-    const elapsed = Date.now() - this.startTime;
+  private draw(now: number) {
+    this.renderer.render(this.orbs, now - this.startTime, (orb) =>
+      this.reconciler.phaseOf(orb),
+    );
+  }
 
-    // Pass latest orbs to renderer
-    this.renderer.setOrbs(this.orbs);
-    this.renderer.render(this.orbs, elapsed);
-
-    // Continue animation
-    if (this.isPlaying) {
-      this.animationFrameId = requestAnimationFrame(() => this.render());
-    }
+  private frame(now: number) {
+    this.settle(now);
+    this.orbs = this.physicsEngine.update(this.orbs);
+    this.draw(now);
   }
 
   /**
    * Start/resume animation
    */
   start() {
-    if (!this.isPlaying) {
-      this.isPlaying = true;
-      this.render();
-    } else if (this.animationFrameId === null) {
-      // Was initialized but not running
-      this.render();
-    }
+    if (this.destroyed) return;
+    this.loop.start();
   }
 
   /**
    * Pause animation
    */
   pause() {
-    this.isPlaying = false;
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
+    if (this.destroyed) return;
+    this.loop.stop();
   }
 
   /**
-   * Destroy chart instance
+   * Destroy chart instance. Safe to call more than once.
    */
   destroy() {
-    this.pause();
-    this.renderer.destroy();
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.loop.stop();
+    this.runTeardown();
     this.orbs = [];
   }
 
-  /**
-   * Get current orbs data
-   */
-  getData(): Orb[] {
-    return [...this.orbs];
+  private runTeardown() {
+    while (this.teardown.length > 0) this.teardown.pop()?.();
   }
 
   /**
-   * Update configuration
+   * Get current orbs data, without orbs that are shrinking out
+   */
+  getData(): Orb[] {
+    return this.orbs.filter((orb) => !this.tweener.isExiting(orb));
+  }
+
+  /**
+   * Update configuration. Keys set to `undefined` are ignored.
    */
   updateConfig(config: Partial<OrbChartConfig>) {
-    this.config = { ...this.config, ...config };
+    if (this.destroyed) return;
+    const previous = this.config;
+    this.config = this.resolver.merge(previous, config);
     this.renderer.updateConfig(this.config);
+    this.input.refresh();
     if (config.width !== undefined || config.height !== undefined) {
       this.handleResize();
+    }
+
+    if (
+      this.config.minRadius !== previous.minRadius ||
+      this.config.maxRadius !== previous.maxRadius
+    ) {
+      // A paused chart cannot animate, so it jumps and draws once.
+      const duration = this.loop.playing ? this.config.transitionDuration : 0;
+      const now = this.loop.now();
+      this.reconciler.retargetAll(this.orbs, this.config, now, duration);
+      this.settle(now);
+      if (!this.loop.playing) this.draw(now);
     }
   }
 }

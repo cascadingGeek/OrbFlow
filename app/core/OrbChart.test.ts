@@ -78,7 +78,11 @@ describe("OrbChart (vanilla)", () => {
 
   describe("setData", () => {
     it("scales radius linearly from minRadius to maxRadius by value", () => {
-      const chart = new OrbChart(container, { minRadius: 20, maxRadius: 80 });
+      const chart = new OrbChart(container, {
+        minRadius: 20,
+        maxRadius: 80,
+        transitionDuration: 0,
+      });
 
       chart.setData([
         { id: "low", label: "Low", value: 10 },
@@ -91,7 +95,10 @@ describe("OrbChart (vanilla)", () => {
     });
 
     it("gives every orb minRadius when all values are equal", () => {
-      const chart = new OrbChart(container, { minRadius: 30 });
+      const chart = new OrbChart(container, {
+        minRadius: 30,
+        transitionDuration: 0,
+      });
 
       chart.setData([
         { id: "a", label: "A", value: 5 },
@@ -221,7 +228,11 @@ describe("OrbChart (vanilla)", () => {
   describe("pointer interaction", () => {
     // One orb at the centre (200, 150) with radius 25.
     function chartWithOneOrb(config = {}) {
-      const chart = new OrbChart(container, { minRadius: 25, ...config });
+      const chart = new OrbChart(container, {
+        minRadius: 25,
+        transitionDuration: 0,
+        ...config,
+      });
       chart.setData([
         {
           id: "a",
@@ -269,9 +280,9 @@ describe("OrbChart (vanilla)", () => {
       const onOrbHover = jest.fn();
       chartWithOneOrb({ onOrbHover });
 
-      dispatchMouse(canvasOf(), "mousemove", 200, 150);
-      dispatchMouse(canvasOf(), "mousemove", 202, 151);
-      dispatchMouse(canvasOf(), "mouseleave");
+      dispatchMouse(canvasOf(), "pointermove", 200, 150);
+      dispatchMouse(canvasOf(), "pointermove", 202, 151);
+      dispatchMouse(canvasOf(), "pointerleave");
 
       expect(onOrbHover.mock.calls).toEqual([
         [expect.objectContaining({ id: "a" })],
@@ -282,7 +293,7 @@ describe("OrbChart (vanilla)", () => {
     it("shows a tooltip with label, value and category on hover", () => {
       chartWithOneOrb();
 
-      dispatchMouse(canvasOf(), "mousemove", 200, 150);
+      dispatchMouse(canvasOf(), "pointermove", 200, 150);
 
       const tooltip = tooltipOf();
       expect(tooltip?.style.opacity).toBe("1");
@@ -293,23 +304,26 @@ describe("OrbChart (vanilla)", () => {
 
     it("hides the tooltip when the pointer moves off the orb or leaves", () => {
       chartWithOneOrb();
-      dispatchMouse(canvasOf(), "mousemove", 200, 150);
+      dispatchMouse(canvasOf(), "pointermove", 200, 150);
 
-      dispatchMouse(canvasOf(), "mousemove", 10, 10);
+      dispatchMouse(canvasOf(), "pointermove", 10, 10);
       expect(tooltipOf()?.style.opacity).toBe("0");
 
-      dispatchMouse(canvasOf(), "mousemove", 200, 150);
-      dispatchMouse(canvasOf(), "mouseleave");
+      dispatchMouse(canvasOf(), "pointermove", 200, 150);
+      dispatchMouse(canvasOf(), "pointerleave");
       expect(tooltipOf()?.style.opacity).toBe("0");
     });
 
     it("shows orb labels in the tooltip as text, never as HTML", () => {
-      const chart = new OrbChart(container, { minRadius: 25 });
+      const chart = new OrbChart(container, {
+        minRadius: 25,
+        transitionDuration: 0,
+      });
       chart.setData([
         { id: "x", label: '<img src="x" onerror="alert(1)">', value: 1 },
       ]);
 
-      dispatchMouse(canvasOf(), "mousemove", 200, 150);
+      dispatchMouse(canvasOf(), "pointermove", 200, 150);
 
       expect(tooltipOf()?.querySelector("img")).toBeNull();
       expect(tooltipOf()?.textContent).toContain('<img src="x"');
@@ -326,7 +340,7 @@ describe("OrbChart (vanilla)", () => {
         },
       ]);
 
-      dispatchMouse(canvasOf(), "mousemove", 200, 150);
+      dispatchMouse(canvasOf(), "pointermove", 200, 150);
 
       expect(tooltipOf()?.querySelector("b")).toBeNull();
       expect(tooltipOf()?.textContent).toContain("<b onmouseover=alert(1)>");

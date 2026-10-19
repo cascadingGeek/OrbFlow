@@ -6,6 +6,7 @@ import {
   FakeResizeObserver,
   dispatchMouse,
   installFakeCanvas,
+  type FakeContext,
   installFakeResizeObserver,
   installFrameQueue,
   setElementSize,
@@ -26,10 +27,11 @@ describe("OrbChart lifecycle", () => {
   let frames: ReturnType<typeof installFrameQueue>;
   let listeners: ReturnType<typeof trackListeners>;
   let clock: number;
+  let contexts: FakeContext[];
 
   beforeEach(() => {
     jest.useFakeTimers();
-    installFakeCanvas();
+    contexts = installFakeCanvas();
     installFakeResizeObserver();
     frames = installFrameQueue();
     clock = 0;
@@ -55,6 +57,7 @@ describe("OrbChart lifecycle", () => {
     target instanceof HTMLCanvasElement || target === container;
   const canvas = () => container.querySelector("canvas") as HTMLCanvasElement;
   const tooltip = () => container.querySelector("div") as HTMLDivElement;
+  const drawn = () => contexts.reduce((n, ctx) => n + ctx.calls.length, 0);
   const advance = (ms: number) => {
     clock += ms;
     frames.step();
@@ -303,16 +306,72 @@ describe("OrbChart lifecycle", () => {
     });
   });
 
-  describe("playback (AC-9)", () => {
-    it("resumes a paused chart on setData", () => {
+  describe("playback (0003 AC-9, AC-15)", () => {
+    it("starts a chart that was never paused on setData", () => {
+      const chart = new OrbChart(container);
+
+      chart.setData([row("a", 1)]);
+
+      expect(frames.pending()).toBe(1);
+    });
+
+    it("keeps a paused chart paused, draws once, and snaps to the data", () => {
+      const chart = new OrbChart(container, { minRadius: 20, maxRadius: 80 });
+      chart.setData([row("a", 1), row("b", 5)]);
+      advance(400);
+      chart.pause();
+      const before = drawn();
+
+      chart.setData([row("b", 9), row("c", 2)]);
+
+      expect(frames.pending()).toBe(0);
+      expect(drawn()).toBeGreaterThan(before);
+      expect(chart.getData().map((o) => [o.id, o.radius])).toEqual([
+        ["b", 80],
+        ["c", 20],
+      ]);
+      expect(frames.pending()).toBe(0);
+    });
+
+    it("starts again after start() following a paused setData", () => {
       const chart = new OrbChart(container);
       chart.setData([row("a", 1)]);
       chart.pause();
-      expect(frames.pending()).toBe(0);
-
       chart.setData([row("a", 2)]);
 
+      chart.start();
+
       expect(frames.pending()).toBe(1);
+    });
+
+    it("redraws once, queueing nothing, when a paused chart resizes", () => {
+      const chart = new OrbChart(container);
+      chart.setData([row("a", 1)]);
+      chart.pause();
+      const before = drawn();
+
+      setElementSize(container, 500, 400);
+      FakeResizeObserver.instances[0].trigger();
+
+      expect(drawn()).toBeGreaterThan(before);
+      expect(frames.pending()).toBe(0);
+    });
+
+    it("redraws once when a paused chart changes how it looks", () => {
+      const chart = new OrbChart(container);
+      chart.setData([row("a", 1)]);
+      chart.pause();
+
+      for (const change of [
+        { colorScheme: ["#111111"] },
+        { backgroundColor: "#222222" },
+        { minRadius: 33 },
+      ]) {
+        const before = drawn();
+        chart.updateConfig(change);
+        expect(drawn()).toBeGreaterThan(before);
+        expect(frames.pending()).toBe(0);
+      }
     });
   });
 

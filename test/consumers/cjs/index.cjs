@@ -1,9 +1,17 @@
 // Requires the packed orbflow in plain Node, with no DOM (AC-1, AC-5).
 const assert = require("node:assert/strict");
+const { createElement } = require("react");
+const { renderToString } = require("react-dom/server");
 const { OrbChart } = require("orbflow");
 const { OrbChart: ReactOrbChart } = require("orbflow/react");
 
 assert.equal(typeof OrbChart, "function", "orbflow: OrbChart");
-assert.equal(typeof ReactOrbChart, "function", "orbflow/react: OrbChart");
+// The React entry is a forwardRef component: it renders a plain div on the
+// server (spec 0003 AC-1).
+assert.equal(
+  renderToString(createElement(ReactOrbChart, { data: [], className: "c" })),
+  '<div class="c" style="width:100%;height:100%"></div>',
+  "orbflow/react: server render",
+);
 assert.equal(globalThis.window, undefined, "window defined after require");
 assert.equal(globalThis.document, undefined, "document defined after require");

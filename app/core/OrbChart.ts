@@ -2,16 +2,13 @@ import { PhysicsEngine } from "./physics";
 import { CanvasRenderer } from "../renderer/CanvasRenderer";
 import { CanvasInput } from "../renderer/CanvasInput";
 import { AnimationLoop } from "./AnimationLoop";
+import { Playback } from "./Playback";
+import { reportIssues } from "./reportIssues";
 import { ConfigResolver, type ResolvedConfig } from "./ConfigResolver";
 import { DataValidator } from "./DataValidator";
 import { OrbReconciler } from "./OrbReconciler";
 import { RadiusTweener } from "./RadiusTweener";
-import type {
-  Orb,
-  OrbChartConfig,
-  OrbDataInput,
-  OrbDataIssue,
-} from "../types/types";
+import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
 
 /**
  * Main OrbChart class - framework agnostic with bubble styling
@@ -22,6 +19,7 @@ export class OrbChart {
   private renderer!: CanvasRenderer;
   private input!: CanvasInput;
   private loop: AnimationLoop;
+  private playback: Playback;
   private tweener: RadiusTweener;
   private reconciler: OrbReconciler;
   private validator = new DataValidator();
@@ -48,6 +46,7 @@ export class OrbChart {
       height: this.container.clientHeight,
     });
     this.loop = new AnimationLoop((now) => this.frame(now));
+    this.playback = new Playback(this.loop);
     this.startTime = this.loop.now();
     this.reconciler = new OrbReconciler(
       (this.tweener = new RadiusTweener((orb) =>
@@ -99,32 +98,21 @@ export class OrbChart {
     const { accepted, issues, notArray } = this.validator.validate(data);
     if (notArray) console.warn("OrbFlow: setData expects an array, got none.");
 
+    // A paused chart jumps to the new data and draws one still frame.
     const now = this.loop.now();
+    const duration = this.playback.paused ? 0 : undefined;
     this.orbs = this.reconciler.reconcile(
       this.orbs,
       accepted,
       this.config,
       now,
+      duration,
     );
     this.settle(now);
     this.renderer.preloadImages(this.orbs);
-    this.loop.start();
-    this.reportIssues(issues);
-  }
-
-  private reportIssues(issues: OrbDataIssue[]) {
-    if (issues.length === 0) return;
-    console.warn(
-      `OrbFlow: skipped ${issues.length} invalid data ${
-        issues.length === 1 ? "entry" : "entries"
-      }.`,
-      issues,
-    );
-    try {
-      this.config.onDataIssue(issues);
-    } catch (error) {
-      console.error("OrbFlow: onDataIssue handler threw.", error);
-    }
+    if (this.playback.paused) this.draw(now);
+    else this.playback.autoStart();
+    reportIssues(issues, this.config.onDataIssue);
   }
 
   private handleResize() {
@@ -139,6 +127,8 @@ export class OrbChart {
     this.renderer.updateDimensions(rect.width, rect.height);
     this.physicsEngine.updateDimensions(rect.width, rect.height);
     this.reconciler.placeAwaiting(rect.width, rect.height);
+    // Resizing clears the canvas, so a paused chart repaints once.
+    if (this.playback.paused) this.draw(this.loop.now());
   }
 
   /** Advances tweens, drops exited orbs, and clears a stale hover. */
@@ -164,7 +154,7 @@ export class OrbChart {
    */
   start() {
     if (this.destroyed) return;
-    this.loop.start();
+    this.playback.start();
   }
 
   /**
@@ -172,7 +162,7 @@ export class OrbChart {
    */
   pause() {
     if (this.destroyed) return;
-    this.loop.stop();
+    this.playback.pause();
   }
 
   /**
@@ -181,7 +171,7 @@ export class OrbChart {
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
-    this.loop.stop();
+    this.playback.stop();
     this.runTeardown();
     this.orbs = [];
   }
@@ -210,16 +200,19 @@ export class OrbChart {
       this.handleResize();
     }
 
-    if (
+    const now = this.loop.now();
+    const radiiChanged =
       this.config.minRadius !== previous.minRadius ||
-      this.config.maxRadius !== previous.maxRadius
-    ) {
-      // A paused chart cannot animate, so it jumps and draws once.
+      this.config.maxRadius !== previous.maxRadius;
+    if (radiiChanged) {
+      // A stopped chart cannot animate, so it jumps.
       const duration = this.loop.playing ? this.config.transitionDuration : 0;
-      const now = this.loop.now();
       this.reconciler.retargetAll(this.orbs, this.config, now, duration);
       this.settle(now);
-      if (!this.loop.playing) this.draw(now);
+    }
+    // Nothing else will paint a stopped chart, so draw one frame.
+    if (this.playback.paused || (radiiChanged && !this.loop.playing)) {
+      this.draw(now);
     }
   }
 }

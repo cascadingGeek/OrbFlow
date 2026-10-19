@@ -24,7 +24,8 @@ assert(
   "dist/ has no JavaScript files, run the build first",
 );
 
-// Surface: each entry exports exactly `OrbChart` at runtime (AC-3).
+// Surface: each entry exports exactly `OrbChart` at runtime (AC-3). Types such
+// as `OrbChartHandle` are erased, so the TypeScript fixture checks those.
 async function checkSurface(file) {
   const mod = await import(pathToFileURL(join(dist, file)).href);
   const keys = Object.keys(mod).sort();

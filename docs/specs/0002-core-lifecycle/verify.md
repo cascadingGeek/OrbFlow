@@ -9,7 +9,7 @@ _Steps derived from spec 0002 acceptance criteria. `/check verify` runs these; `
 - [x] Change an orb's label, value, color, imageUrl → updates in place; omit color → keeps its color → AC-5
 - [x] Pass `[{id:"a",label:"A",value:NaN}, {id:"a",...}, null]` → chart does not crash, one console warning, `onDataIssue` called once → AC-6, AC-7
 - [x] Set `transitionDuration: 0` and `-5` → snaps instantly; negative warns and uses 400 → AC-8
-- [x] Pause the chart, then call `setData` → animation resumes → AC-9
+- [x] Pause the chart, then call `setData` → new data is drawn once and the animation stays paused (changed by spec 0003 AC-9) → AC-9
 - [x] On a phone or touch emulation, tap an orb → tooltip above the tap, hides after 2.5 s or on empty tap; tap a second orb → tooltip switches; page still scrolls → AC-10
 - [x] `updateConfig({ maxRadius: 120 })` → all orbs animate to new size; `updateConfig({ transitionDuration: undefined })` keeps 400 → AC-11
 - [x] Hover an orb while it is removed → tooltip hides; change its value while hovered → tooltip text updates → AC-12, AC-15

@@ -21,3 +21,22 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run check:package
+
+  react-19:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install React 19
+        run: npm install --no-save react@19 react-dom@19 @types/react@19 @types/react-dom@19
+      - run: npm run typecheck
+      - run: npm test -- app/react
+      - run: npm run build
+      - name: Smoke fixtures against React 19
+        run: npm run smoke
+        env:
+          ORBFLOW_REACT_MAJOR: 19

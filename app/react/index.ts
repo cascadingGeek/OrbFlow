@@ -1,5 +1,5 @@
 export { OrbChart } from "./OrbChart";
-export type { OrbChartProps } from "./OrbChart";
+export type { OrbChartHandle, OrbChartProps } from "./OrbChart";
 export type {
   Orb,
   OrbChartConfig,

@@ -35,17 +35,18 @@ export class OrbReconciler {
 
   /**
    * Applies the accepted entries to `current` and returns the new list:
-   * accepted entries in input order, then orbs that are exiting.
+   * accepted entries in input order, then orbs that are exiting. `duration`
+   * overrides the configured transition length (0 makes every change snap).
    */
   reconcile(
     current: Orb[],
     accepted: OrbDataInput[],
     config: ResolvedConfig,
     now: number,
+    duration = config.transitionDuration,
   ): Orb[] {
     const byId = new Map(current.map((orb) => [orb.id, orb]));
     const radiusOf = this.radiusScale(accepted, config);
-    const duration = config.transitionDuration;
     const kept = new Set<string>();
 
     const live = accepted.map((item, index) => {

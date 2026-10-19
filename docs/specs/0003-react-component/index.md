@@ -1,7 +1,7 @@
 # 0003. Production ready React component
 
 **Date**: 2026-10-19
-**Status**: Proposed
+**Status**: In Progress
 
 ## Summary
 
@@ -147,13 +147,13 @@ Tracer Bullet: each slice goes through the component, the public types, the chec
 
 ## Follow-up
 
-- [ ] Spec 0002 AC-9 and its `verify.md` line change with slice 3. Mark the old rule as replaced by this spec.
-- [ ] Spec 0001 AC-3's export list gains `OrbChartHandle` (slice 1).
+- [x] Spec 0002 AC-9 and its `verify.md` line change with slice 3. Mark the old rule as replaced by this spec.
+- [x] Spec 0001 AC-3's export list gains `OrbChartHandle` (slice 1).
 - [ ] Row 6 (accessibility) decides which `aria-*` and div attributes `OrbChartProps` accepts, and whether `getData` helps build the text alternative.
 - [ ] Row 7 (idle behavior) can reuse the user paused flag so it does not fight a user pause when the tab is hidden and shown.
 - [ ] Row 8 (README) documents: keep `data` stable, removed props do not reset, pause behavior, the ref handle, and server rendering with `"use client"`.
 - [ ] Row 9 (examples) includes a server rendered React example that exercises AC-1 for real.
 - [ ] Consider a `paused` prop or a `reset` path for removed props in a minor release if developers ask.
 - [ ] `damping`, `minVelocity`, and `bounceCoefficient` are read once at mount, and `width` and `height` are overwritten by the measured container size. Today `updateConfig` accepts them but they change nothing. TSDoc says so now; decide before 1.0 whether to make them live or remove them from `updateConfig`.
-- [ ] Slice 0 records the measured React size headroom here: not yet measured.
+- [x] Slice 0 measured the React entry at 5.76 kB gzip against the 9 kB budget (3.24 kB headroom) before any change. After the build it is 6.24 kB (2.76 kB headroom).
 - [ ] `OrbChart.ts` is already above the 200 line guideline (225). Slice 3 must not grow it.

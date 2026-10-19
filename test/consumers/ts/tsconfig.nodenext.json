@@ -6,7 +6,8 @@
     "strict": true,
     "skipLibCheck": false,
     "jsx": "react-jsx",
-    "noEmit": true
+    "noEmit": true,
+    "types": []
   },
   "files": ["index.ts", "index.mts"]
 }

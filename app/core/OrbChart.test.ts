@@ -255,9 +255,7 @@ describe("OrbChart (vanilla)", () => {
       expect(onOrbClick).not.toHaveBeenCalled();
     });
 
-    // Known bug: applyMouseRepulsion reads an orb list OrbChart never sets.
-    // Remove `.failing` once fixed.
-    it.failing("pushes nearby orbs away from a click", () => {
+    it("pushes nearby orbs away from a click", () => {
       const chart = chartWithOneOrb();
 
       dispatchMouse(canvasOf(), "click", 220, 150);

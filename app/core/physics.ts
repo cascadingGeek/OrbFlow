@@ -11,8 +11,9 @@ class SpatialGrid {
     this.cellSize = cellSize;
   }
 
-  clear() {
+  clear(cellSize: number = this.cellSize) {
     this.grid.clear();
+    this.cellSize = cellSize;
   }
 
   insert(orb: Orb) {
@@ -73,13 +74,20 @@ export class PhysicsEngine {
   }
 
   update(orbs: Orb[]): Orb[] {
-    this.spatialGrid.clear();
-
-    orbs.forEach((orb) => this.spatialGrid.insert(orb));
     orbs.forEach((orb) => {
       this.updatePosition(orb);
       this.handleBoundaries(orb);
     });
+
+    // getNearby only looks one cell away, so a cell must span the longest
+    // collision distance (two of the largest radii), and orbs are indexed
+    // at the positions the collision pass will read.
+    const largestRadius = orbs.reduce(
+      (max, orb) => Math.max(max, orb.radius),
+      0,
+    );
+    this.spatialGrid.clear(Math.max(100, largestRadius * 2));
+    orbs.forEach((orb) => this.spatialGrid.insert(orb));
 
     orbs.forEach((orb) => {
       const nearby = this.spatialGrid.getNearby(orb);
@@ -162,9 +170,15 @@ export class PhysicsEngine {
     }
   }
 
-  // New method for mouse interaction
-  applyMouseRepulsion(mouseX: number, mouseY: number, radius: number = 150) {
-    this.orbs.forEach((orb) => {
+  // Pushes orbs away from a pointer. Takes the orbs like update(), so the
+  // engine holds no orb list of its own that could drift out of date.
+  applyMouseRepulsion(
+    orbs: Orb[],
+    mouseX: number,
+    mouseY: number,
+    radius: number = 150,
+  ) {
+    orbs.forEach((orb) => {
       const dx = orb.x - mouseX;
       const dy = orb.y - mouseY;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -176,14 +190,4 @@ export class PhysicsEngine {
       }
     });
   }
-
-  get orbsArray(): Orb[] {
-    return this.orbs;
-  }
-
-  set orbsArray(orbs: Orb[]) {
-    this.orbs = orbs;
-  }
-
-  private orbs: Orb[] = [];
 }

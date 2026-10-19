@@ -17,7 +17,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 1 | Trim to vanilla and React | Foundation | done |
 | 2 | Coding standards and tooling | Foundation | done |
 | 3 | Package build and exports | Foundation | done |
-| 4 | Production ready core lifecycle | Slice 1 | planned |
+| 4 | Production ready core lifecycle | Slice 1 | in-progress |
 | 5 | Production ready React component | Slice 1 | planned |
 | 6 | Accessibility and reduced motion | Slice 2 | planned |
 | 7 | Performance and idle behavior | Slice 2 | planned |
@@ -64,10 +64,18 @@ Spec [0001](../specs/0001-package-build-exports/index.md) · code in `tsdown.con
 
 ## Slice 1: Production ready core and React
 
-### 4. Production ready core lifecycle · needs a decision
+### 4. Production ready core lifecycle · in-progress
 Make the vanilla chart safe to create, update, and destroy many times in a real app. Includes how data updates behave (match orbs by `id` and animate size changes instead of reshuffling), input validation, and pointer and touch input.
 **Done when:** `destroy()` removes every listener and observer with no leaks; calling `setData` with changed values keeps existing orbs in place and animates their size; bad input (empty list, zero, negative, or non numeric values, duplicate ids) is handled with a clear result instead of a crash; tap works on touch devices.
-- [ ] Design it (spec): `/architect production ready core lifecycle`
+- [x] Design it (spec): `/architect production ready core lifecycle`
+- [ ] Build it: `/develop production ready core lifecycle`
+   - [ ] Teardown thread: destroy removes everything, idempotent, safe constructor failure, clock and seeded float phase (AC-1, AC-2, AC-14, AC-16)
+   - [ ] Validation and reporting: skip bad entries, `onDataIssue`, `OrbDataIssue` export (AC-6, AC-7, AC-13)
+   - [ ] In place updates with animation: id matching, enter and exit, `transitionDuration`, config fixes (AC-3, AC-4, AC-5, AC-8, AC-9, AC-11, AC-12)
+   - [ ] Touch input: Pointer Events hover, tap tooltip, stale hover cleared (AC-10, AC-15)
+- [ ] Verify it: `/check verify production ready core lifecycle`
+- [ ] Test it: `/test production ready core lifecycle`
+Spec [0002](../specs/0002-core-lifecycle/index.md) · code in `app/core/`, `app/renderer/`, `app/types/`
 
 ### 5. Production ready React component · needs a decision
 Make `<OrbChart>` behave like a well made React component: safe under server rendering, correct in strict mode, always calling the latest callbacks, and offering a way to pause, resume, or reach the chart instance.

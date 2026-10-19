@@ -18,7 +18,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 2 | Coding standards and tooling | Foundation | done |
 | 3 | Package build and exports | Foundation | done |
 | 4 | Production ready core lifecycle | Slice 1 | done |
-| 5 | Production ready React component | Slice 1 | planned |
+| 5 | Production ready React component | Slice 1 | in-progress |
 | 6 | Accessibility and reduced motion | Slice 2 | planned |
 | 7 | Performance and idle behavior | Slice 2 | planned |
 | 8 | README and API reference | Slice 3 | planned |
@@ -77,10 +77,18 @@ Make the vanilla chart safe to create, update, and destroy many times in a real 
 - [x] Test it: `/test production ready core lifecycle`
 Spec [0002](../specs/0002-core-lifecycle/index.md) · code in `app/core/`, `app/renderer/`, `app/types/`
 
-### 5. Production ready React component · needs a decision
+### 5. Production ready React component · in-progress
 Make `<OrbChart>` behave like a well made React component: safe under server rendering, correct in strict mode, always calling the latest callbacks, and offering a way to pause, resume, or reach the chart instance.
 **Done when:** it renders in a server rendered React 18+ app without errors; mounting twice in strict mode leaves one chart and no leaks; changing `onOrbClick` takes effect without a remount; inline config objects do not cause work on every render; a ref gives access to start, pause, and the current data.
-- [ ] Design it (spec): `/architect production ready react component`
+- [x] Design it (spec): `/architect production ready react component`
+- [ ] Build it: `/develop production ready react component`
+   - [ ] Handle thread: baseline size, `forwardRef` handle, `OrbChartHandle` export, fixtures and 0001 AC-3 fix (AC-7, AC-8, AC-11, AC-13)
+   - [ ] Effect hygiene: latest callbacks, config diff, data reference check (AC-4, AC-5, AC-6, AC-12)
+   - [ ] Core paused data: `Playback`, paused `setData` and redraw, amends spec 0002 AC-9 (AC-9, AC-15)
+   - [ ] Server, strict, failure hardening, React 19 CI job (AC-1, AC-2, AC-3, AC-10, AC-14)
+- [ ] Verify it: `/check verify production ready react component`
+- [ ] Test it: `/test production ready react component`
+Spec [0003](../specs/0003-react-component/index.md)
 
 ## Slice 2: Trust and polish
 

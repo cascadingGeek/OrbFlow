@@ -27,6 +27,7 @@ npm run format         # Prettier write (format:check to verify only)
 npm run check:package  # publint + attw + dist verifier (after build)
 npm run size           # size budgets (after build)
 npm run smoke          # pack tarball, install into consumer fixtures
+ORBFLOW_REACT_MAJOR=19 npm run smoke  # same, with React 19 and @types/react 19
 ```
 `prepublishOnly` runs lint, typecheck, test, build, check:package, size, smoke in that order.
 
@@ -42,6 +43,7 @@ Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`, or a folder `docs/s
 - Named exports only, no default exports. Public surface is exactly what spec 0001 AC-3 lists; a new public export is an API decision, never incidental. Never export internals (`PhysicsEngine`, `CanvasRenderer`).
 - Lifecycle: `OrbChart` registers every resource (canvas, input listeners, `ResizeObserver`) on its teardown list the moment it is created, and `destroy()` is idempotent. Time comes from the `AnimationLoop` clock, never `Date.now()`; collaborators take it as an argument so tests can fake it.
 - No DOM at import time: touch `window`/`document` only inside constructors or methods (SSR safety).
+- Pause means pause: `Playback` owns the user paused flag, and `setData`, resize, and `updateConfig` redraw a paused chart once but never queue a frame. The React component never touches the core during render, and passes callbacks through stable wrappers so a new function identity never causes an update.
 - The React entry imports the core by relative path, never as `orbflow`. `"use client"` is added by the build, never written in source.
 - Zero runtime `dependencies`; stay within the size budgets, or revisit them in spec 0001 on purpose.
 - TSDoc on every exported class, method, prop, and type, including defaults.
@@ -55,7 +57,7 @@ Chosen in /audit, installed by `/develop tooling` (scope feature 2):
   (`simple-git-hooks` runs `lint-staged` then `npm run typecheck`; `npm install` installs the hook through `prepare`.)
 - Testing: unit + integration with a framework (Jest installed; `/test` sets up the runner), plus spec 0001's dist checks and smoke fixtures.
   (Jest + ts-jest, tests beside the source as `*.test.ts(x)`, choices in `test-preferences.json`. DOM tests opt in with a `@jest-environment jsdom` docblock and use the fakes in `app/test-support/fakeDom.ts` (2D canvas, ResizeObserver, animation frames, live listener counts, touch taps). A known, unfixed bug is kept as an `it.failing` test with a comment until it is fixed.)
-- CI: GitHub Actions on push and PR running lint, typecheck, test, build, check:package.
+- CI: GitHub Actions on push and PR running lint, typecheck, test, build, check:package, plus a `react-19` job (typecheck, React tests, build, smoke against React 19).
 
 ## Git
 

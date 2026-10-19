@@ -67,7 +67,7 @@ export class OrbChart {
 
     // Setup mouse repulsion handler
     this.renderer.setCanvasClickHandler((x, y) => {
-      this.physicsEngine.applyMouseRepulsion(x, y, 150);
+      this.physicsEngine.applyMouseRepulsion(this.orbs, x, y, 150);
     });
 
     // Initialize physics engine

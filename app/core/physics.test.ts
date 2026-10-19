@@ -138,22 +138,27 @@ describe("PhysicsEngine", () => {
       expect(distance(a, b)).toBeGreaterThanOrEqual(40 - 1e-9);
     });
 
-    // Known bug: the spatial grid only checks neighbours one cell away.
-    // Remove `.failing` once fixed.
-    it.failing(
-      "separates two max size orbs whose centres are two grid cells apart",
-      () => {
-        // Default maxRadius is 80, so two big orbs overlap at any distance
-        // under 160, but the grid only checks neighbours one 100px cell away.
-        const engine = new PhysicsEngine(1000, 400);
-        const a = makeOrb({ id: "a", radius: 80, x: 195, y: 200 });
-        const b = makeOrb({ id: "b", radius: 80, x: 305, y: 200 });
+    it("separates two max size orbs whose centres are two grid cells apart", () => {
+      // Default maxRadius is 80, so two big orbs overlap at any distance
+      // under 160, more than one 100px grid cell.
+      const engine = new PhysicsEngine(1000, 400);
+      const a = makeOrb({ id: "a", radius: 80, x: 195, y: 200 });
+      const b = makeOrb({ id: "b", radius: 80, x: 305, y: 200 });
 
-        engine.update([a, b]);
+      engine.update([a, b]);
 
-        expect(distance(a, b)).toBeGreaterThanOrEqual(160 - 1e-9);
-      },
-    );
+      expect(distance(a, b)).toBeGreaterThanOrEqual(160 - 1e-9);
+    });
+
+    it("separates overlapping orbs with a custom maxRadius far above the default", () => {
+      const engine = new PhysicsEngine(2000, 1000);
+      const a = makeOrb({ id: "a", radius: 200, x: 500, y: 500 });
+      const b = makeOrb({ id: "b", radius: 200, x: 850, y: 500 });
+
+      engine.update([a, b]);
+
+      expect(distance(a, b)).toBeGreaterThanOrEqual(400 - 1e-9);
+    });
 
     it("does not produce NaN when two orbs sit at the exact same point", () => {
       const engine = new PhysicsEngine(400, 400);
@@ -172,9 +177,8 @@ describe("PhysicsEngine", () => {
     it("pushes orbs inside the radius away from the pointer", () => {
       const engine = new PhysicsEngine(400, 400);
       const near = makeOrb({ id: "near", x: 220, y: 200 });
-      engine.orbsArray = [near];
 
-      engine.applyMouseRepulsion(200, 200, 150);
+      engine.applyMouseRepulsion([near], 200, 200, 150);
 
       expect(near.vx).toBeGreaterThan(0);
       expect(near.vy).toBeCloseTo(0);
@@ -183,9 +187,8 @@ describe("PhysicsEngine", () => {
     it("ignores orbs outside the radius", () => {
       const engine = new PhysicsEngine(400, 400);
       const far = makeOrb({ id: "far", x: 390, y: 390 });
-      engine.orbsArray = [far];
 
-      engine.applyMouseRepulsion(0, 0, 150);
+      engine.applyMouseRepulsion([far], 0, 0, 150);
 
       expect(far.vx).toBe(0);
       expect(far.vy).toBe(0);

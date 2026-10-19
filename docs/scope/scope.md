@@ -17,7 +17,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 1 | Trim to vanilla and React | Foundation | done |
 | 2 | Coding standards and tooling | Foundation | done |
 | 3 | Package build and exports | Foundation | done |
-| 4 | Production ready core lifecycle | Slice 1 | in-progress |
+| 4 | Production ready core lifecycle | Slice 1 | done |
 | 5 | Production ready React component | Slice 1 | planned |
 | 6 | Accessibility and reduced motion | Slice 2 | planned |
 | 7 | Performance and idle behavior | Slice 2 | planned |
@@ -64,7 +64,7 @@ Spec [0001](../specs/0001-package-build-exports/index.md) · code in `tsdown.con
 
 ## Slice 1: Production ready core and React
 
-### 4. Production ready core lifecycle · in-progress
+### 4. Production ready core lifecycle · done
 Make the vanilla chart safe to create, update, and destroy many times in a real app. Includes how data updates behave (match orbs by `id` and animate size changes instead of reshuffling), input validation, and pointer and touch input.
 **Done when:** `destroy()` removes every listener and observer with no leaks; calling `setData` with changed values keeps existing orbs in place and animates their size; bad input (empty list, zero, negative, or non numeric values, duplicate ids) is handled with a clear result instead of a crash; tap works on touch devices.
 - [x] Design it (spec): `/architect production ready core lifecycle`

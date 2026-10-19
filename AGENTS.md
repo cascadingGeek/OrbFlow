@@ -40,6 +40,7 @@ Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`, or a folder `docs/s
 - Folders by role under `app/`: `core/`, `renderer/`, `types/`, `react/` (future frameworks become sibling folders on the same core).
 - TypeScript `strict`: no `any` (use `unknown` and narrow), exhaustive types. Public types are part of the 1.0 promise.
 - Named exports only, no default exports. Public surface is exactly what spec 0001 AC-3 lists; a new public export is an API decision, never incidental. Never export internals (`PhysicsEngine`, `CanvasRenderer`).
+- Lifecycle: `OrbChart` registers every resource (canvas, input listeners, `ResizeObserver`) on its teardown list the moment it is created, and `destroy()` is idempotent. Time comes from the `AnimationLoop` clock, never `Date.now()`; collaborators take it as an argument so tests can fake it.
 - No DOM at import time: touch `window`/`document` only inside constructors or methods (SSR safety).
 - The React entry imports the core by relative path, never as `orbflow`. `"use client"` is added by the build, never written in source.
 - Zero runtime `dependencies`; stay within the size budgets, or revisit them in spec 0001 on purpose.
@@ -53,7 +54,7 @@ Chosen in /audit, installed by `/develop tooling` (scope feature 2):
 - Pre-commit: lint + format + typecheck on staged files via a git hook.
   (`simple-git-hooks` runs `lint-staged` then `npm run typecheck`; `npm install` installs the hook through `prepare`.)
 - Testing: unit + integration with a framework (Jest installed; `/test` sets up the runner), plus spec 0001's dist checks and smoke fixtures.
-  (Jest + ts-jest, tests beside the source as `*.test.ts(x)`, choices in `test-preferences.json`. DOM tests opt in with a `@jest-environment jsdom` docblock and use the fakes in `app/test-support/fakeDom.ts` (2D canvas, ResizeObserver, animation frames). A known, unfixed bug is kept as an `it.failing` test with a comment until it is fixed.)
+  (Jest + ts-jest, tests beside the source as `*.test.ts(x)`, choices in `test-preferences.json`. DOM tests opt in with a `@jest-environment jsdom` docblock and use the fakes in `app/test-support/fakeDom.ts` (2D canvas, ResizeObserver, animation frames, live listener counts, touch taps). A known, unfixed bug is kept as an `it.failing` test with a comment until it is fixed.)
 - CI: GitHub Actions on push and PR running lint, typecheck, test, build, check:package.
 
 ## Git

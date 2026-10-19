@@ -4,9 +4,9 @@ Tiny private projects that install the real packed tarball, the way a user would
 
 ## Fixtures
 
-- `esm/`: `"type": "module"`, imports both entries, asserts no `window`/`document` after import.
+- `esm/`: `"type": "module"`, imports both entries, asserts no `window`/`document` after import, and server renders the React entry with `renderToString`.
 - `cjs/`: `"type": "commonjs"`, the same checks through `require`.
-- `ts/`: type checks both entries under `tsconfig.node10.json`, `tsconfig.nodenext.json` (from `index.ts` as CJS and `index.mts` as ESM), and `tsconfig.bundler.json`, all `strict` with `skipLibCheck: false`. `@ts-expect-error` lines prove internals and default imports are rejected.
+- `ts/`: type checks both entries under `tsconfig.node10.json`, `tsconfig.nodenext.json` (from `index.ts` as CJS and `index.mts` as ESM), and `tsconfig.bundler.json`, all `strict` with `skipLibCheck: false`. `@ts-expect-error` lines prove internals and default imports are rejected. Every tsconfig sets `"types": []` and the fixture never imports `react` as a value, because root and fixture `@types/react` copies would otherwise collide.
 - `bare/`: no dependencies; the tarball install must print no `peer` or `ERESOLVE` line (React stays an optional peer).
 
 ## Conventions
@@ -15,6 +15,7 @@ Tiny private projects that install the real packed tarball, the way a user would
 - A fixture's assertions live in a `check` script in its `package.json`; `smoke.mjs` runs it with the fixture's own binaries.
 - To add a fixture: create the folder, add it to the `fixtures` list in `scripts/smoke.mjs` (and to `quietInstall` if its install must be warning free).
 - `smoke.mjs` installs with `--no-save --no-package-lock --ignore-scripts` and deletes each `node_modules` afterwards, so nothing here should be committed except source and `package.json`.
+- Set `ORBFLOW_REACT_MAJOR=19` to pin `react`, `react-dom`, and `@types/react` to that major in the same install as the tarball.
 - Run after `npm run build`; it packs whatever `dist/` holds.
 
 _Drafted by /sync from the introducing change, worth a quick human pass._

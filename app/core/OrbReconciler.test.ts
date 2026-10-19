@@ -141,3 +141,47 @@ describe("OrbReconciler target radius and colour", () => {
     expect(orbs[0].radius).toBe(20);
   });
 });
+
+describe("OrbReconciler duration override", () => {
+  const config = new ConfigResolver().resolve(
+    { width: 400, height: 300, transitionDuration: 400 },
+    { width: 0, height: 0 },
+  );
+  const item = (id: string, value = 1) => ({ id, label: id, value });
+
+  it("snaps new, changed, and removed orbs when the duration is 0", () => {
+    const tweener = new RadiusTweener();
+    const reconciler = new OrbReconciler(tweener, () => 0.5);
+    const first = reconciler.reconcile(
+      [],
+      [item("a"), item("b", 5)],
+      config,
+      0,
+    );
+    tweener.step(first, 400);
+
+    const next = reconciler.reconcile(
+      first,
+      [item("b", 9), item("c")],
+      config,
+      400,
+      0,
+    );
+    const settled = tweener.step(next, 400);
+
+    expect(settled.map((o) => o.id)).toEqual(["b", "c"]);
+    expect(settled.every((o) => o.radius > 0)).toBe(true);
+    expect(settled[1].radius).toBe(config.minRadius);
+  });
+
+  it("uses the configured duration when no override is given", () => {
+    const tweener = new RadiusTweener();
+    const reconciler = new OrbReconciler(tweener, () => 0.5);
+    const orbs = reconciler.reconcile([], [item("a")], config, 0);
+
+    tweener.step(orbs, 200);
+
+    expect(orbs[0].radius).toBeGreaterThan(0);
+    expect(orbs[0].radius).toBeLessThan(config.minRadius);
+  });
+});

@@ -262,6 +262,21 @@ describe("<OrbChart> behavior", () => {
       expect(frames.pending()).toBe(1);
     });
 
+    it("start() before the chart exists cancels an early pause", () => {
+      const ref = createRef<OrbChartHandle>();
+      const Parent = () => {
+        useLayoutEffect(() => {
+          ref.current?.pause();
+          ref.current?.start();
+        }, []);
+        return <OrbChart {...props()} ref={ref} />;
+      };
+
+      render(<Parent />);
+
+      expect(frames.pending()).toBe(1);
+    });
+
     it("does nothing and does not throw after unmount", () => {
       const ref = createRef<OrbChartHandle>();
       const { unmount } = render(<OrbChart {...props()} ref={ref} />);

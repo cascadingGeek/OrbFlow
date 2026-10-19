@@ -3,52 +3,39 @@ import { Orb, OrbChartConfig } from "../types/types";
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  private container: HTMLElement;
   // Only images that finished loading; drawImage throws on a broken image.
   private imageCache: Map<string, HTMLImageElement> = new Map();
   // Every URL ever requested, so a slow or broken one is fetched only once.
   private requestedImages: Set<string> = new Set();
-  private tooltipElement: HTMLDivElement | null = null;
+  // Images still loading, so destroy() can silence their callbacks.
+  private pendingImages: Set<HTMLImageElement> = new Set();
   private config: OrbChartConfig;
-  private hoveredOrb: Orb | null = null;
   private width: number = 0;
   private height: number = 0;
-  private renderedOrbs: Orb[] = [];
-  private onCanvasClick: ((x: number, y: number) => void) | null = null;
 
   constructor(container: HTMLElement, config: OrbChartConfig) {
-    this.container = container;
     this.config = config;
 
-    // Create canvas
-    this.canvas = document.createElement("canvas");
-    this.canvas.style.display = "block";
-    this.canvas.style.cursor = "pointer";
-    this.container.appendChild(this.canvas);
-
-    const context = this.canvas.getContext("2d");
+    // Check the context before the canvas touches the container, so a
+    // failure leaves nothing behind.
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     if (!context) throw new Error("Could not get canvas context");
+    this.canvas = canvas;
     this.ctx = context;
 
-    if (this.config.enableTooltip) {
-      this.createTooltip();
-    }
+    this.canvas.style.display = "block";
+    this.canvas.style.cursor = "pointer";
+    container.appendChild(this.canvas);
+  }
 
-    this.setupEventListeners();
+  /** The canvas this renderer draws on, for the input layer to listen to. */
+  get element(): HTMLCanvasElement {
+    return this.canvas;
   }
 
   updateConfig(config: OrbChartConfig) {
     this.config = config;
-    if (this.config.enableTooltip && !this.tooltipElement) {
-      this.createTooltip();
-    } else if (!this.config.enableTooltip && this.tooltipElement) {
-      this.tooltipElement.remove();
-      this.tooltipElement = null;
-    }
-  }
-
-  setCanvasClickHandler(handler: (x: number, y: number) => void) {
-    this.onCanvasClick = handler;
   }
 
   updateDimensions(width: number, height: number) {
@@ -64,16 +51,20 @@ export class CanvasRenderer {
     this.ctx.scale(dpr, dpr);
   }
 
-  render(orbs: Orb[], elapsedTime: number = 0) {
+  render(
+    orbs: Orb[],
+    elapsedTime: number = 0,
+    phaseOf: (orb: Orb) => number = () => 0,
+  ) {
     // Clear canvas
     this.ctx.fillStyle = this.config.backgroundColor || "#0a0e1a";
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     // Draw orbs with float effect
-    orbs.forEach((orb, index) => {
+    orbs.forEach((orb) => {
       const floatAmp = this.config.floatAmplitude ?? 2.0;
       const floatSpd = this.config.floatSpeed ?? 0.002;
-      const floatY = floatAmp * Math.sin(elapsedTime * floatSpd + index * 0.7);
+      const floatY = floatAmp * Math.sin(elapsedTime * floatSpd + phaseOf(orb));
 
       this.drawBubble(orb, 0, floatY);
     });
@@ -198,138 +189,24 @@ export class CanvasRenderer {
 
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => this.imageCache.set(url, img);
-    img.onerror = () => console.warn(`Failed to load: ${url}`);
+    this.pendingImages.add(img);
+    img.onload = () => {
+      this.pendingImages.delete(img);
+      this.imageCache.set(url, img);
+    };
+    img.onerror = () => {
+      this.pendingImages.delete(img);
+      console.warn(`Failed to load: ${url}`);
+    };
     img.src = url;
   }
 
-  private createTooltip() {
-    this.tooltipElement = document.createElement("div");
-    this.tooltipElement.style.cssText = `
-      position: absolute;
-      background: rgba(15, 23, 42, 0.9);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-      z-index: 1000;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    `;
-    this.container.style.position = "relative";
-    this.container.appendChild(this.tooltipElement);
-  }
-
-  private setupEventListeners() {
-    this.canvas.addEventListener("click", this.handleClick.bind(this));
-    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
-    this.canvas.addEventListener(
-      "mouseleave",
-      this.handleMouseLeave.bind(this),
-    );
-  }
-
-  setOrbs(orbs: Orb[]) {
-    this.renderedOrbs = orbs;
-  }
-
-  private handleClick(event: MouseEvent) {
-    if (this.onCanvasClick) {
-      this.onCanvasClick(event.offsetX, event.offsetY);
-    }
-
-    const orb = this.getOrbAtPosition(event.offsetX, event.offsetY);
-    if (orb && this.config.onOrbClick) {
-      this.config.onOrbClick(orb, event);
-    }
-  }
-
-  private handleMouseMove(event: MouseEvent) {
-    const orb = this.getOrbAtPosition(event.offsetX, event.offsetY);
-
-    if (orb !== this.hoveredOrb) {
-      this.hoveredOrb = orb;
-      if (this.config.onOrbHover) {
-        this.config.onOrbHover(orb);
-      }
-    }
-
-    if (this.tooltipElement && this.config.enableTooltip) {
-      if (orb) {
-        // Orb data is user supplied: set it as text, never as HTML.
-        const lines = [
-          this.tooltipLine(orb.label, "font-weight: 600; margin-bottom: 2px;"),
-          this.tooltipLine(
-            `Value: ${orb.value}`,
-            "font-size: 12px; opacity: 0.8;",
-          ),
-        ];
-        if (orb.metadata?.category) {
-          lines.push(
-            this.tooltipLine(
-              String(orb.metadata.category),
-              "font-size: 11px; opacity: 0.6; margin-top: 2px;",
-            ),
-          );
-        }
-        this.tooltipElement.replaceChildren(...lines);
-
-        // Prevent tooltip clipping
-        const tipRect = this.tooltipElement.getBoundingClientRect();
-        let left = event.offsetX + 15;
-        let top = event.offsetY + 15;
-
-        if (left + tipRect.width > this.width) left -= tipRect.width + 20;
-        if (top + tipRect.height > this.height) top -= tipRect.height + 20;
-
-        this.tooltipElement.style.left = `${left}px`;
-        this.tooltipElement.style.top = `${top}px`;
-        this.tooltipElement.style.opacity = "1";
-      } else {
-        this.tooltipElement.style.opacity = "0";
-      }
-    }
-  }
-
-  private tooltipLine(text: string, style: string): HTMLDivElement {
-    const line = document.createElement("div");
-    line.style.cssText = style;
-    line.textContent = text;
-    return line;
-  }
-
-  private handleMouseLeave() {
-    this.hoveredOrb = null;
-    if (this.tooltipElement) {
-      this.tooltipElement.style.opacity = "0";
-    }
-    if (this.config.onOrbHover) {
-      this.config.onOrbHover(null);
-    }
-  }
-
-  private getOrbAtPosition(x: number, y: number): Orb | null {
-    // Canvas context was scaled by DPR, so use CSS pixel coordinates directly
-    for (const orb of this.renderedOrbs) {
-      const dx = x - orb.x;
-      const dy = y - orb.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance <= orb.radius) {
-        return orb;
-      }
-    }
-    return null;
-  }
-
   destroy() {
-    if (this.tooltipElement) {
-      this.tooltipElement.remove();
+    for (const img of this.pendingImages) {
+      img.onload = null;
+      img.onerror = null;
     }
+    this.pendingImages.clear();
     this.canvas.remove();
     this.imageCache.clear();
     this.requestedImages.clear();

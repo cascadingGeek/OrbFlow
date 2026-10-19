@@ -132,16 +132,59 @@ export function setElementSize(el: HTMLElement, width: number, height: number) {
     }) as DOMRect;
 }
 
-/** Dispatches a mouse event with the canvas relative offsetX / offsetY. */
+/** Dispatches a pointer style event with canvas relative offsetX / offsetY. */
 export function dispatchMouse(
   target: Element,
-  type: "click" | "mousemove" | "mouseleave",
+  type: "click" | "pointermove" | "pointerleave" | "pointerdown",
   x = 0,
   y = 0,
+  pointerType: "mouse" | "touch" | "pen" = "mouse",
 ) {
+  // jsdom has no PointerEvent, so a MouseEvent carries the pointer fields.
   const event = new MouseEvent(type, { bubbles: true });
   Object.defineProperty(event, "offsetX", { value: x });
   Object.defineProperty(event, "offsetY", { value: y });
+  Object.defineProperty(event, "pointerType", { value: pointerType });
   target.dispatchEvent(event);
   return event;
+}
+
+/** A touch tap: pointerdown, then the click the browser fires after it. */
+export function tap(target: Element, x: number, y: number) {
+  dispatchMouse(target, "pointerdown", x, y, "touch");
+  return dispatchMouse(target, "click", x, y, "touch");
+}
+
+/**
+ * Counts listeners that are added and not yet removed on any event target.
+ * Call `restore()` (or `jest.restoreAllMocks()`) when done.
+ */
+export function trackListeners() {
+  const live = new Map<string, EventTarget>();
+  const ids = new WeakMap<object, number>();
+  let nextId = 0;
+  const keyOf = (target: object, type: string, listener: unknown) => {
+    if (!ids.has(target)) ids.set(target, nextId++);
+    if (!ids.has(listener as object)) ids.set(listener as object, nextId++);
+    return `${ids.get(target)}:${type}:${ids.get(listener as object)}`;
+  };
+  const add = EventTarget.prototype.addEventListener;
+  const remove = EventTarget.prototype.removeEventListener;
+  jest
+    .spyOn(EventTarget.prototype, "addEventListener")
+    .mockImplementation(function (this: EventTarget, type, listener, options) {
+      if (listener) live.set(keyOf(this, type, listener), this);
+      return add.call(this, type, listener, options);
+    });
+  jest
+    .spyOn(EventTarget.prototype, "removeEventListener")
+    .mockImplementation(function (this: EventTarget, type, listener, options) {
+      if (listener) live.delete(keyOf(this, type, listener));
+      return remove.call(this, type, listener, options);
+    });
+  return {
+    /** Live listeners, optionally only on targets the filter accepts. */
+    count: (onTarget: (target: EventTarget) => boolean = () => true) =>
+      [...live.values()].filter(onTarget).length,
+  };
 }

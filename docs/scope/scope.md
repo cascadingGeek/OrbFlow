@@ -123,7 +123,7 @@ Make the orbs look and act like real soap bubbles (clear center, bright rim, soa
    - [x] The burst: `pop`, `popOnClick`, `onOrbPop`, burst timeline, `popStyle` ghosts, idle pops, live region, React `ref.pop` (AC-8 to AC-16)
    - [x] Guards: size, package checks, smoke on React 18 and 19, line counts, performance and visual checks (AC-15 to AC-18)
 - [ ] Verify it: `/check verify bubble redesign and burst`
-- [ ] Test it: `/test bubble redesign and burst`
+- [x] Test it: `/test bubble redesign and burst`
 Spec [0005](../specs/0005-bubble-redesign-burst/index.md) · code in `app/renderer/` and `app/core/`
 
 ## Slice 3: Launch kit

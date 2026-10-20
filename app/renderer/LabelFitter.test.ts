@@ -187,6 +187,22 @@ describe("LabelFitter (AC-4)", () => {
       },
     );
 
+    it("still measures nothing on a repeat fit after many passes", () => {
+      useFont((size) => 0.45 + 6 / size);
+      const fitter = new LabelFitter();
+      const spy = jest.spyOn(
+        fake as unknown as { measureText: () => unknown },
+        "measureText",
+      );
+      fitter.fit(ctx, font, 80, "Bitcoin Cash", null, false);
+      const settled = spy.mock.calls.length;
+      expect(settled).toBeGreaterThan(3);
+
+      fitter.fit(ctx, font, 80, "Bitcoin Cash", null, false);
+
+      expect(spy).toHaveBeenCalledTimes(settled);
+    });
+
     it("hides a label whose width never settles, rather than guessing", () => {
       // Same width at every size: no size can ever fit, so after the passes
       // run out the fitter falls back to what it measured, which is nothing.

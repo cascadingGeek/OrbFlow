@@ -139,4 +139,68 @@ describe("LabelFitter (AC-4)", () => {
       expect(fit.labelSize).toBe(24);
     });
   });
+
+  describe("fit holds for other width curves (AC-4)", () => {
+    const useFont = (perEm: (size: number) => number) => {
+      fake.measureText = (text: string) => {
+        const size = Number(/(\d+(?:\.\d+)?)px/.exec(fake.font)?.[1]);
+        return { width: text.length * size * perEm(size) };
+      };
+      return (text: string, size: number) => text.length * size * perEm(size);
+    };
+
+    it("keeps an image label within 1.2r with a font wider when small", () => {
+      const width = useFont((size) => 0.47 + 0.67 / size);
+      const fit = defined(
+        new LabelFitter().fit(ctx, font, 80, "Bitcoin Cash", "1%", true),
+      );
+      expect(width("Bitcoin Cash", fit.labelSize)).toBeLessThanOrEqual(96);
+      expect(width("Bitcoin Cash", fit.labelSize)).toBeGreaterThan(96 * 0.995);
+    });
+
+    it("never overshoots with a font that is narrower when small", () => {
+      const width = useFont((size) => 0.6 - 0.8 / size);
+      const fit = defined(
+        new LabelFitter().fit(ctx, font, 80, "Bitcoin Cash", null, false),
+      );
+      expect(width("Bitcoin Cash", fit.labelSize)).toBeLessThanOrEqual(120);
+    });
+
+    // Needs up to 8 passes to settle: the fitter must keep checking.
+    it.each([40, 60, 80, 120])(
+      "never overshoots with a sharply curved font at radius %i",
+      (r) => {
+        const width = useFont((size) => 0.45 + 6 / size);
+        const fit = new LabelFitter().fit(
+          ctx,
+          font,
+          r,
+          "Bitcoin Cash",
+          null,
+          false,
+        );
+        if (fit) {
+          expect(width("Bitcoin Cash", fit.labelSize)).toBeLessThanOrEqual(
+            1.5 * r,
+          );
+        }
+      },
+    );
+
+    it("hides a label whose width never settles, rather than guessing", () => {
+      // Same width at every size: no size can ever fit, so after the passes
+      // run out the fitter falls back to what it measured, which is nothing.
+      fake.measureText = () => ({ width: 500 });
+      expect(
+        new LabelFitter().fit(ctx, font, 80, "Bitcoin Cash", null, false),
+      ).toBeNull();
+    });
+
+    it("keeps the label hidden, not overflowing, when nothing readable fits", () => {
+      useFont((size) => 0.45 + 6 / size);
+      expect(
+        new LabelFitter().fit(ctx, font, 20, "Bitcoin Cash", null, false),
+      ).toBeNull();
+    });
+  });
 });

@@ -13,6 +13,8 @@ export interface LabelFit {
 /** Text smaller than this is not drawn. */
 const MIN_SIZE = 10;
 const PROBE = 100;
+/** Fonts curve gently and settle in 1 or 2 passes; steep ones need more. */
+const MAX_PASSES = 12;
 
 /**
  * Picks label and value sizes that fit inside a bubble. A 100 px measure gives
@@ -72,9 +74,13 @@ export class LabelFitter {
   ): number {
     let size = max;
     let probe = PROBE;
-    for (let pass = 0; pass < 3; pass++) {
+    // The largest size measured to fit, for a font that never settles.
+    let measuredFit = 0;
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
       const width = this.measure(ctx, weight, text, probe);
       if (width <= 0) return size;
+      if (width <= cap && probe <= max)
+        measuredFit = Math.max(measuredFit, probe);
       // Where `text` would be `cap` wide, at the probe's width per em.
       const fits = (probe * cap) / width;
       if (pass > 0 && size <= fits) return size;
@@ -83,7 +89,8 @@ export class LabelFitter {
       // probe is wider per em, so the check never lets the text overshoot.
       probe = Math.max(1, Math.floor(size * 2) / 2);
     }
-    return size;
+    // Never return a size that failed its own check.
+    return measuredFit;
   }
 
   private measure(

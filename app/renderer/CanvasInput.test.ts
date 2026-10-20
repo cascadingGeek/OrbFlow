@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import { CanvasInput, type InputConfig } from "./CanvasInput";
+import { TooltipView } from "./TooltipView";
 import { dispatchMouse, tap, trackListeners } from "../test-support/fakeDom";
 import type { Orb } from "../types/types";
 
@@ -49,7 +50,7 @@ describe("CanvasInput", () => {
   const make = (orbs: Orb[] = []) => {
     const input = new CanvasInput(
       canvas,
-      container,
+      new TooltipView(container, () => config),
       () => config,
       onCanvasClick,
     );

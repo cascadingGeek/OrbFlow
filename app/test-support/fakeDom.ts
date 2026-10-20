@@ -1,8 +1,9 @@
 /**
  * Test only helpers for the jsdom environment: a recording 2D context (jsdom
  * has no canvas), a controllable ResizeObserver, a manual animation frame
- * queue, and mouse events with real offsetX / offsetY. Never imported by the
- * public entries, so it is not part of the build.
+ * queue, a controllable matchMedia, key presses, and mouse events with real
+ * offsetX / offsetY. Never imported by the public entries, so it is not part
+ * of the build.
  */
 
 export interface FakeContext {
@@ -187,4 +188,71 @@ export function trackListeners() {
     count: (onTarget: (target: EventTarget) => boolean = () => true) =>
       [...live.values()].filter(onTarget).length,
   };
+}
+
+/** A fake `matchMedia` whose answer and change events the test controls. */
+export function installFakeMatchMedia(
+  options: { matches?: boolean; legacy?: boolean } = {},
+) {
+  type Listener = (event: { matches: boolean }) => void;
+  const listeners = new Set<Listener>();
+  let matches = options.matches ?? false;
+  const query = {
+    media: "(prefers-reduced-motion: reduce)",
+    get matches() {
+      return matches;
+    },
+    addListener: (listener: Listener) => listeners.add(listener),
+    removeListener: (listener: Listener) => listeners.delete(listener),
+    ...(options.legacy
+      ? {}
+      : {
+          addEventListener: (_type: string, listener: Listener) =>
+            listeners.add(listener),
+          removeEventListener: (_type: string, listener: Listener) =>
+            listeners.delete(listener),
+        }),
+  };
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: jest.fn(() => query),
+  });
+  return {
+    /** Changes the system setting and tells every listener. */
+    fire(next: boolean) {
+      matches = next;
+      for (const listener of [...listeners]) listener({ matches: next });
+    },
+    /** Change listeners that are added and not yet removed. */
+    listenerCount: () => listeners.size,
+    /** Puts jsdom back to having no `matchMedia`. */
+    restore() {
+      Reflect.deleteProperty(window, "matchMedia");
+    },
+  };
+}
+
+/** Dispatches a key press on `target`. Extra fields go on the event. */
+export function pressKey(
+  target: Element,
+  key: string,
+  init: KeyboardEventInit = {},
+) {
+  const event = new KeyboardEvent("keydown", {
+    key,
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
+  target.dispatchEvent(event);
+  return event;
+}
+
+/** Narrows a value that a test knows is there, and fails loudly if it is not. */
+export function defined<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a value but got " + String(value));
+  }
+  return value;
 }

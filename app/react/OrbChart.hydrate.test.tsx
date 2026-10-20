@@ -17,7 +17,7 @@ function StubChannel(this: { port1: object; port2: object }) {
   this.port2 = {};
 }
 
-describe("<OrbChart> hydration (AC-2)", () => {
+describe("<OrbChart> hydration (AC-2, AC-12)", () => {
   it("hydrates server markup without a mismatch and adds one canvas", async () => {
     // jsdom lacks these, which the server renderer needs when loaded.
     Object.assign(globalThis, {
@@ -53,6 +53,8 @@ describe("<OrbChart> hydration (AC-2)", () => {
 
     expect(error).not.toHaveBeenCalled();
     expect(host.querySelectorAll("canvas")).toHaveLength(1);
+    expect(host.querySelectorAll("ul")).toHaveLength(1);
+    expect(host.querySelectorAll("button")).toHaveLength(1);
     act(() => root.unmount());
     host.remove();
     jest.restoreAllMocks();

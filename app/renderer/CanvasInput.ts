@@ -1,4 +1,5 @@
 import type { Orb, OrbChartConfig } from "../types/types";
+import type { TooltipView } from "./TooltipView";
 
 const TOUCH_TOOLTIP_MS = 2500;
 
@@ -9,14 +10,12 @@ export type InputConfig = Pick<
 >;
 
 /**
- * Owns every canvas listener and the tooltip. It hit tests, runs the touch
- * tooltip timer, and removes everything in `dispose()`.
+ * Owns every canvas listener. It hit tests, drives the shared tooltip for the
+ * pointer, runs the touch tooltip timer, and removes everything in `dispose()`.
  */
 export class CanvasInput {
-  private tooltip: HTMLDivElement | null = null;
   private liveOrbs: Orb[] = [];
   private hoveredOrb: Orb | null = null;
-  private tooltipKey = "";
   private lastPointerType = "mouse";
   private touchTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
@@ -30,7 +29,7 @@ export class CanvasInput {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly container: HTMLElement,
+    private readonly tooltip: TooltipView,
     private readonly getConfig: () => InputConfig,
     private readonly onCanvasClick: (x: number, y: number) => void,
   ) {
@@ -42,14 +41,7 @@ export class CanvasInput {
 
   /** Creates or removes the tooltip to match `enableTooltip`. */
   refresh() {
-    const enabled = Boolean(this.getConfig().enableTooltip);
-    if (enabled && !this.tooltip) {
-      this.tooltip = this.createTooltip();
-    } else if (!enabled && this.tooltip) {
-      this.tooltip.remove();
-      this.tooltip = null;
-      this.tooltipKey = "";
-    }
+    this.tooltip.setEnabled(Boolean(this.getConfig().enableTooltip));
   }
 
   /** Gives the orbs that can be hit, and clears a hover that went stale. */
@@ -58,11 +50,8 @@ export class CanvasInput {
     if (!this.hoveredOrb) return;
     if (!liveOrbs.includes(this.hoveredOrb)) {
       this.clearHover();
-    } else if (
-      this.tooltip &&
-      this.tooltipKey !== this.keyOf(this.hoveredOrb)
-    ) {
-      this.fillTooltip(this.hoveredOrb);
+    } else if (this.tooltip.owner === "pointer") {
+      this.tooltip.refill(this.hoveredOrb);
     }
   }
 
@@ -74,8 +63,7 @@ export class CanvasInput {
       this.canvas.removeEventListener(type, listener);
     }
     this.clearTimer();
-    this.tooltip?.remove();
-    this.tooltip = null;
+    this.tooltip.dispose();
     this.hoveredOrb = null;
   }
 
@@ -88,8 +76,14 @@ export class CanvasInput {
     const orb = this.hit(event.offsetX, event.offsetY);
     this.setHover(orb);
     if (orb)
-      this.showTooltip(orb, event.offsetX + 15, event.offsetY + 15, false);
-    else this.hideTooltip();
+      this.tooltip.show(
+        orb,
+        event.offsetX + 15,
+        event.offsetY + 15,
+        false,
+        "pointer",
+      );
+    else this.tooltip.hide("pointer");
   }
 
   private onPointerLeave(event: PointerEvent) {
@@ -110,7 +104,7 @@ export class CanvasInput {
         return;
       }
       this.setHover(orb);
-      this.showTooltip(orb, x, y, true);
+      this.tooltip.show(orb, x, y, true, "pointer");
       this.restartTimer();
     }
     if (orb) this.getConfig().onOrbClick?.(orb, event);
@@ -124,7 +118,7 @@ export class CanvasInput {
 
   private clearHover() {
     this.clearTimer();
-    this.hideTooltip();
+    this.tooltip.hide("pointer");
     this.setHover(null);
   }
 
@@ -153,85 +147,5 @@ export class CanvasInput {
       }
     }
     return null;
-  }
-
-  private keyOf(orb: Orb): string {
-    return `${orb.label}\n${orb.value}\n${String(orb.metadata?.category ?? "")}`;
-  }
-
-  private showTooltip(orb: Orb, x: number, y: number, above: boolean) {
-    const tip = this.tooltip;
-    if (!tip) return;
-    this.fillTooltip(orb);
-
-    // Prevent tooltip clipping
-    const { width, height } = this.getConfig();
-    const rect = tip.getBoundingClientRect();
-    let left = x;
-    let top = y;
-    if (above) {
-      left = Math.max(0, x - rect.width / 2);
-      top = Math.max(0, y - rect.height - 20);
-    }
-    if (width !== undefined && left + rect.width > width)
-      left -= rect.width + 20;
-    if (height !== undefined && top + rect.height > height)
-      top -= rect.height + 20;
-
-    tip.style.left = `${left}px`;
-    tip.style.top = `${top}px`;
-    tip.style.opacity = "1";
-  }
-
-  private fillTooltip(orb: Orb) {
-    if (!this.tooltip) return;
-    // Orb data is user supplied: set it as text, never as HTML.
-    const lines = [
-      this.line(orb.label, "font-weight: 600; margin-bottom: 2px;"),
-      this.line(`Value: ${orb.value}`, "font-size: 12px; opacity: 0.8;"),
-    ];
-    if (orb.metadata?.category) {
-      lines.push(
-        this.line(
-          String(orb.metadata.category),
-          "font-size: 11px; opacity: 0.6; margin-top: 2px;",
-        ),
-      );
-    }
-    this.tooltip.replaceChildren(...lines);
-    this.tooltipKey = this.keyOf(orb);
-  }
-
-  private hideTooltip() {
-    if (this.tooltip) this.tooltip.style.opacity = "0";
-  }
-
-  private line(text: string, style: string): HTMLDivElement {
-    const line = document.createElement("div");
-    line.style.cssText = style;
-    line.textContent = text;
-    return line;
-  }
-
-  private createTooltip(): HTMLDivElement {
-    const tip = document.createElement("div");
-    tip.style.cssText = `
-      position: absolute;
-      background: rgba(15, 23, 42, 0.9);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-      z-index: 1000;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    `;
-    this.container.style.position = "relative";
-    this.container.appendChild(tip);
-    return tip;
   }
 }

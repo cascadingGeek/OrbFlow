@@ -7,6 +7,8 @@ export type ResolvedConfig = Required<
   PhysicsConfig;
 
 const DEFAULT_TRANSITION_MS = 400;
+const DEFAULT_ARIA_LABEL = "Bubble chart";
+const MOTION_VALUES = ["auto", "always", "never"];
 
 // Cool color palette (Blues, Cyans, Purples)
 const DEFAULT_COLORS = [
@@ -22,7 +24,7 @@ const DEFAULT_COLORS = [
 
 /**
  * Owns the option defaults, the merge that ignores `undefined`, and the
- * `transitionDuration` check.
+ * checks for `transitionDuration`, `ariaLabel`, and `reducedMotion`.
  */
 export class ConfigResolver {
   /** Fills every default. `size` is the fallback width and height. */
@@ -42,6 +44,9 @@ export class ConfigResolver {
       onOrbHover: config.onOrbHover ?? (() => {}),
       onDataIssue: config.onDataIssue ?? (() => {}),
       transitionDuration: this.validDuration(config.transitionDuration),
+      ariaLabel: this.validLabel(config.ariaLabel),
+      ariaDescription: config.ariaDescription ?? "",
+      reducedMotion: this.validMotion(config.reducedMotion),
       damping: config.damping,
       minVelocity: config.minVelocity,
       bounceCoefficient: config.bounceCoefficient,
@@ -61,7 +66,26 @@ export class ConfigResolver {
     }
     const merged: ResolvedConfig = Object.assign({}, current, defined);
     merged.transitionDuration = this.validDuration(merged.transitionDuration);
+    merged.ariaLabel = this.validLabel(merged.ariaLabel);
+    merged.reducedMotion = this.validMotion(merged.reducedMotion);
     return merged;
+  }
+
+  private validLabel(value: string | undefined): string {
+    return typeof value === "string" && value.trim() !== ""
+      ? value
+      : DEFAULT_ARIA_LABEL;
+  }
+
+  private validMotion(value: unknown): "auto" | "always" | "never" {
+    if (value === undefined) return "auto";
+    if (typeof value === "string" && MOTION_VALUES.includes(value)) {
+      return value as "auto" | "always" | "never";
+    }
+    console.warn(
+      'OrbFlow: reducedMotion must be "auto", "always", or "never", using "auto".',
+    );
+    return "auto";
   }
 
   private validDuration(value: number | undefined): number {

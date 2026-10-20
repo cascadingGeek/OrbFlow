@@ -234,4 +234,84 @@ describe("CanvasRenderer", () => {
       expect(warn).not.toHaveBeenCalled();
     });
   });
+
+  describe("accessibility and still mode (AC-1, AC-5, AC-8)", () => {
+    const arcsAt = (radius: number) =>
+      calls("arc").filter((call) => call.args[2] === radius);
+
+    it("hides the canvas from assistive technology", () => {
+      new CanvasRenderer(container, {});
+      expect(canvas().getAttribute("aria-hidden")).toBe("true");
+    });
+
+    it("floats an orb by the amplitude, and not at all in still mode", () => {
+      const renderer = new CanvasRenderer(container, {
+        floatAmplitude: 10,
+        floatSpeed: 1,
+      });
+      const orb = makeOrb();
+      const phase = () => Math.PI / 2;
+
+      renderer.render([orb], 0, phase);
+      expect(arcsAt(30)[0].args[1]).toBeCloseTo(110);
+
+      contexts[0].calls.length = 0;
+      renderer.setStill(true);
+      renderer.render([orb], 0, phase);
+      expect(arcsAt(30).every((call) => call.args[1] === 100)).toBe(true);
+    });
+
+    it("reports where an orb is drawn, with the float offset", () => {
+      const renderer = new CanvasRenderer(container, { floatAmplitude: 4 });
+      const orb = makeOrb();
+      expect(renderer.centerOf(orb, 0, Math.PI / 2).y).toBeCloseTo(104);
+      renderer.setStill(true);
+      expect(renderer.centerOf(orb, 0, Math.PI / 2)).toEqual({
+        x: 100,
+        y: 100,
+      });
+    });
+
+    it("draws a two tone ring last, only for the focused orb", () => {
+      const renderer = new CanvasRenderer(container, { floatAmplitude: 0 });
+      const orbs = [makeOrb({ id: "a" }), makeOrb({ id: "b", x: 200 })];
+      renderer.setFocus("b");
+
+      renderer.render(orbs);
+
+      const arcs = calls("arc");
+      expect(arcs.slice(-2).map((call) => call.args)).toEqual([
+        [200, 100, 33, 0, Math.PI * 2],
+        [200, 100, 35, 0, Math.PI * 2],
+      ]);
+      expect(calls("stroke").length).toBeGreaterThan(2);
+    });
+
+    it("draws no ring when nothing has focus or the focused orb is gone", () => {
+      const renderer = new CanvasRenderer(container, {});
+      renderer.render([makeOrb()]);
+      expect(arcsAt(35)).toHaveLength(0);
+
+      renderer.setFocus("missing");
+      renderer.render([makeOrb()]);
+      expect(arcsAt(35)).toHaveLength(0);
+    });
+
+    it("tells its owner when an image has loaded", () => {
+      const images: HTMLImageElement[] = [];
+      jest.spyOn(window, "Image").mockImplementation(() => {
+        const img = document.createElement("img");
+        images.push(img);
+        return img;
+      });
+      const onImageLoaded = jest.fn();
+      const renderer = new CanvasRenderer(container, {}, onImageLoaded);
+
+      renderer.preloadImages([makeOrb({ imageUrl: "https://x.test/a.png" })]);
+      expect(onImageLoaded).not.toHaveBeenCalled();
+      images[0].onload?.(new Event("load"));
+
+      expect(onImageLoaded).toHaveBeenCalledTimes(1);
+    });
+  });
 });

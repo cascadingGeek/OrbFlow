@@ -1,12 +1,16 @@
 import type { AnimationLoop } from "./AnimationLoop";
 
 /**
- * Wraps the animation loop and remembers whether the developer paused it.
- * `pause()` sticks until `start()`, so data and config updates can redraw a
- * paused chart without waking it up.
+ * Wraps the animation loop and remembers two reasons it may be idle: the
+ * developer paused it, or the chart holds still for reduced motion. A pause
+ * sticks until `start()`, so data and config updates can redraw a paused chart
+ * without waking it up. It also remembers that the chart wanted to run, so
+ * leaving still mode can bring the loop back.
  */
 export class Playback {
   private userPaused = false;
+  private still = false;
+  private wantsToRun = false;
 
   constructor(private readonly loop: AnimationLoop) {}
 
@@ -15,10 +19,26 @@ export class Playback {
     return this.userPaused;
   }
 
-  /** Clears the pause and runs the loop. */
+  /** True while the chart holds still for reduced motion. */
+  get reduced(): boolean {
+    return this.still;
+  }
+
+  /** True while the frame loop is running. */
+  get running(): boolean {
+    return this.loop.playing;
+  }
+
+  /** True when no frame loop should run: paused or still. */
+  get idle(): boolean {
+    return this.userPaused || this.still;
+  }
+
+  /** Clears the pause and runs the loop, unless the chart holds still. */
   start() {
     this.userPaused = false;
-    this.loop.start();
+    this.wantsToRun = true;
+    if (!this.still) this.loop.start();
   }
 
   /** Remembers the pause and cancels the queued frame. */
@@ -27,9 +47,20 @@ export class Playback {
     this.loop.stop();
   }
 
-  /** Runs the loop unless the developer paused it. */
+  /** Runs the loop unless the developer paused it or the chart is still. */
   autoStart() {
-    if (!this.userPaused) this.loop.start();
+    this.wantsToRun = true;
+    if (!this.idle) this.loop.start();
+  }
+
+  /**
+   * Enters or leaves still mode. Entering stops the loop. Leaving restarts it
+   * only if the chart wanted to run and the developer has not paused it.
+   */
+  setReduced(reduced: boolean) {
+    this.still = reduced;
+    if (reduced) this.loop.stop();
+    else if (this.wantsToRun && !this.userPaused) this.loop.start();
   }
 
   /** Cancels the queued frame without touching the pause flag. */

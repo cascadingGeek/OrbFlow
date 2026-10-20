@@ -19,7 +19,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 3 | Package build and exports | Foundation | done |
 | 4 | Production ready core lifecycle | Slice 1 | done |
 | 5 | Production ready React component | Slice 1 | done |
-| 6 | Accessibility and reduced motion | Slice 2 | planned |
+| 6 | Accessibility and reduced motion | Slice 2 | in-progress |
 | 7 | Performance and idle behavior | Slice 2 | planned |
 | 8 | README and API reference | Slice 3 | planned |
 | 9 | Runnable examples | Slice 3 | planned |
@@ -93,10 +93,18 @@ Spec [0003](../specs/0003-react-component/index.md) · code in `app/react/`, `ap
 
 ## Slice 2: Trust and polish
 
-### 6. Accessibility and reduced motion · needs a decision
+### 6. Accessibility and reduced motion
 A canvas is invisible to screen readers, and constant motion bothers some users. Give the chart an accessible name, a text alternative for its data, keyboard reachable orbs, and respect for the reduced motion setting.
 **Done when:** a screen reader announces the chart and can reach each orb's label and value; orbs can be focused and activated from the keyboard; with reduced motion on, orbs settle and stay still.
-- [ ] Design it (spec): `/architect accessibility and reduced motion`
+- [x] Design it (spec): `/architect accessibility and reduced motion`
+- [x] Build it: `/develop accessibility and reduced motion`
+   - [x] Prepare room and name and list: extract `TooltipView`, `AccessibleLayer` with hidden buttons, `ariaLabel` and `ariaDescription`, React and type checks (AC-1, AC-2, AC-4, AC-11, AC-12, AC-13, AC-14)
+   - [x] Keyboard and focus cue: roving tab stop, arrows, focus ring, tooltip on focus, lost focus rule (AC-3, AC-5, AC-6)
+   - [x] Reduced motion: `reducedMotion` option, `MotionPreference`, `Playback` idle, `Redrawer`, `Settler`, live switch (AC-7, AC-8, AC-9, AC-10)
+   - [x] Guards: size budgets, smoke on React 18 and 19, line counts (AC-12, AC-13, AC-14)
+- [ ] Verify it: `/check verify accessibility and reduced motion`
+- [x] Test it: `/test accessibility and reduced motion`
+Spec [0004](../specs/0004-accessibility-reduced-motion/index.md) · code in `app/core/`, `app/renderer/`, `app/types/`
 
 ### 7. Performance and idle behavior · needs a decision
 Keep the chart smooth and cheap: stop animating when it is off screen or the tab is hidden, and know how many orbs it can handle at a smooth frame rate.
@@ -127,6 +135,8 @@ A repeatable, trustworthy way to publish: semantic versioning, a changelog, auto
 
 ## Deferred
 Out of scope for v1, kept so the plan stays honest. Each is a minor release with no breaking changes, started once v1 shows traction.
+- **Value formatting (`formatValue`)**: one option so canvas, tooltip, and screen reader agree, replacing the hard coded `%` · needs a decision · from spec 0004
+- **Label text contrast**: pick light or dark label text per orb color for custom palettes · needs a decision · from spec 0004
 - **Vue support (v1.1)**: a Vue 3 component on the same core · needs a decision
 - **Svelte support (v1.2)**: a Svelte component on the same core · needs a decision
 - **Angular support (v1.3)**: an Angular component on the same core · needs a decision

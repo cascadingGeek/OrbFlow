@@ -12,8 +12,16 @@ export class CanvasRenderer {
   private config: OrbChartConfig;
   private width: number = 0;
   private height: number = 0;
+  // Still mode draws no float wobble; the focus ring follows the same offset.
+  private still = false;
+  private focusedId: string | null = null;
 
-  constructor(container: HTMLElement, config: OrbChartConfig) {
+  /** `onImageLoaded` lets an idle chart draw once when an image arrives. */
+  constructor(
+    container: HTMLElement,
+    config: OrbChartConfig,
+    private readonly onImageLoaded: () => void = () => {},
+  ) {
     this.config = config;
 
     // Check the context before the canvas touches the container, so a
@@ -24,6 +32,8 @@ export class CanvasRenderer {
     this.canvas = canvas;
     this.ctx = context;
 
+    // The accessible list carries the same facts, so hide the canvas.
+    this.canvas.setAttribute("aria-hidden", "true");
     this.canvas.style.display = "block";
     this.canvas.style.cursor = "pointer";
     container.appendChild(this.canvas);
@@ -36,6 +46,28 @@ export class CanvasRenderer {
 
   updateConfig(config: OrbChartConfig) {
     this.config = config;
+  }
+
+  /** Turns the float wobble off (true) or back on. */
+  setStill(still: boolean) {
+    this.still = still;
+  }
+
+  /** The orb that gets the focus ring, or `null` for none. */
+  setFocus(id: string | null) {
+    this.focusedId = id;
+  }
+
+  /** Where `orb` is drawn: its position plus the current float offset. */
+  centerOf(orb: Orb, elapsedTime: number, phase: number) {
+    return { x: orb.x, y: orb.y + this.floatOffset(elapsedTime, phase) };
+  }
+
+  private floatOffset(elapsedTime: number, phase: number): number {
+    if (this.still) return 0;
+    const floatAmp = this.config.floatAmplitude ?? 2.0;
+    const floatSpd = this.config.floatSpeed ?? 0.002;
+    return floatAmp * Math.sin(elapsedTime * floatSpd + phase);
   }
 
   updateDimensions(width: number, height: number) {
@@ -62,12 +94,29 @@ export class CanvasRenderer {
 
     // Draw orbs with float effect
     orbs.forEach((orb) => {
-      const floatAmp = this.config.floatAmplitude ?? 2.0;
-      const floatSpd = this.config.floatSpeed ?? 0.002;
-      const floatY = floatAmp * Math.sin(elapsedTime * floatSpd + phaseOf(orb));
-
-      this.drawBubble(orb, 0, floatY);
+      this.drawBubble(orb, 0, this.floatOffset(elapsedTime, phaseOf(orb)));
     });
+
+    // The ring goes last, so it sits on top of every orb.
+    const focused = orbs.find((orb) => orb.id === this.focusedId);
+    if (focused) {
+      const { x, y } = this.centerOf(focused, elapsedTime, phaseOf(focused));
+      this.drawFocusRing(x, y, focused.radius);
+    }
+  }
+
+  // Two tones, so the ring shows on any background.
+  private drawFocusRing(x: number, y: number, r: number) {
+    this.ctx.lineWidth = 2;
+    for (const [offset, color] of [
+      [3, "#0a0e1a"],
+      [5, "#ffffff"],
+    ] as const) {
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, r + offset, 0, Math.PI * 2);
+      this.ctx.strokeStyle = color;
+      this.ctx.stroke();
+    }
   }
 
   private drawBubble(orb: Orb, floatX: number, floatY: number) {
@@ -193,6 +242,7 @@ export class CanvasRenderer {
     img.onload = () => {
       this.pendingImages.delete(img);
       this.imageCache.set(url, img);
+      this.onImageLoaded();
     };
     img.onerror = () => {
       this.pendingImages.delete(img);

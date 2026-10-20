@@ -1,6 +1,5 @@
 import { PhysicsEngine } from "./physics";
-import { CanvasRenderer } from "../renderer/CanvasRenderer";
-import { CanvasInput } from "../renderer/CanvasInput";
+import { ChartView } from "../renderer/ChartView";
 import { AnimationLoop } from "./AnimationLoop";
 import { Playback } from "./Playback";
 import { reportIssues } from "./reportIssues";
@@ -8,6 +7,11 @@ import { ConfigResolver, type ResolvedConfig } from "./ConfigResolver";
 import { DataValidator } from "./DataValidator";
 import { OrbReconciler } from "./OrbReconciler";
 import { RadiusTweener } from "./RadiusTweener";
+import { MotionPreference } from "./MotionPreference";
+import { Settler } from "./Settler";
+import { Redrawer } from "./Redrawer";
+import { Teardown } from "./Teardown";
+import { resolveContainer } from "./resolveContainer";
 import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
 
 /**
@@ -16,8 +20,9 @@ import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
 export class OrbChart {
   private container: HTMLElement;
   private physicsEngine!: PhysicsEngine;
-  private renderer!: CanvasRenderer;
-  private input!: CanvasInput;
+  private view!: ChartView;
+  private motion!: MotionPreference;
+  private redrawer!: Redrawer;
   private loop: AnimationLoop;
   private playback: Playback;
   private tweener: RadiusTweener;
@@ -27,19 +32,11 @@ export class OrbChart {
   private orbs: Orb[] = [];
   private startTime: number;
   private destroyed = false;
-  // Undo steps in the order resources were created; run in reverse.
-  private teardown: (() => void)[] = [];
+  private teardown = new Teardown();
   private config: ResolvedConfig;
 
   constructor(container: HTMLElement | string, config: OrbChartConfig = {}) {
-    // Get container element
-    if (typeof container === "string") {
-      const el = document.querySelector(container);
-      if (!el) throw new Error(`Container "${container}" not found`);
-      this.container = el as HTMLElement;
-    } else {
-      this.container = container;
-    }
+    this.container = resolveContainer(container);
 
     this.config = this.resolver.resolve(config, {
       width: this.container.clientWidth,
@@ -57,33 +54,48 @@ export class OrbChart {
     try {
       this.mount();
     } catch (error) {
-      this.runTeardown();
+      this.teardown.run();
       throw error;
     }
   }
 
   private mount() {
-    this.renderer = new CanvasRenderer(this.container, this.config);
-    this.teardown.push(() => this.renderer.destroy());
-
-    this.input = new CanvasInput(
-      this.renderer.element,
-      this.container,
-      () => this.config,
-      (x, y) => this.physicsEngine.applyMouseRepulsion(this.orbs, x, y, 150),
-    );
-    this.teardown.push(() => this.input.dispose());
+    this.view = new ChartView(this.container, () => this.config, {
+      onCanvasClick: (x, y) => {
+        if (this.playback.reduced) return;
+        this.physicsEngine.applyMouseRepulsion(this.orbs, x, y, 150);
+      },
+      onImageLoaded: () => {
+        if (this.playback.idle) this.redrawer.run(false);
+      },
+      elapsed: () => this.loop.now() - this.startTime,
+      phaseOf: (orb) => this.reconciler.phaseOf(orb),
+      onResize: () => this.handleResize(),
+      redrawIfStopped: () => {
+        if (!this.loop.playing) this.draw(this.loop.now());
+      },
+    });
+    this.teardown.add(() => this.view.dispose());
 
     this.physicsEngine = new PhysicsEngine(
       this.config.width,
       this.config.height,
       this.config,
     );
-
-    const resizeObserver = new ResizeObserver(() => this.handleResize());
-    this.teardown.push(() => resizeObserver.disconnect());
-    resizeObserver.observe(this.container);
-
+    const settler = new Settler(this.physicsEngine);
+    this.redrawer = new Redrawer(this.playback, {
+      now: () => this.loop.now(),
+      sized: () => this.config.width > 0 && this.config.height > 0,
+      snap: () => this.sync(Infinity),
+      settleOrbs: () => settler.settle(this.orbs),
+      draw: (now) => this.draw(now),
+      setStill: (still) => this.view.setStill(still),
+    });
+    this.motion = new MotionPreference(this.config.reducedMotion, (reduced) =>
+      this.redrawer.flipped(reduced),
+    );
+    this.teardown.add(() => this.motion.dispose());
+    this.redrawer.apply(this.motion.reduced);
     this.handleResize();
   }
 
@@ -98,9 +110,9 @@ export class OrbChart {
     const { accepted, issues, notArray } = this.validator.validate(data);
     if (notArray) console.warn("OrbFlow: setData expects an array, got none.");
 
-    // A paused chart jumps to the new data and draws one still frame.
+    // A paused or still chart jumps to the new data and draws one frame.
     const now = this.loop.now();
-    const duration = this.playback.paused ? 0 : undefined;
+    const duration = this.playback.idle ? 0 : undefined;
     this.orbs = this.reconciler.reconcile(
       this.orbs,
       accepted,
@@ -108,10 +120,11 @@ export class OrbChart {
       now,
       duration,
     );
-    this.settle(now);
-    this.renderer.preloadImages(this.orbs);
-    if (this.playback.paused) this.draw(now);
-    else this.playback.autoStart();
+    this.sync(now);
+    this.view.syncList(this.getData());
+    this.view.preloadImages(this.orbs);
+    if (this.playback.idle) this.redrawer.run();
+    this.playback.autoStart();
     reportIssues(issues, this.config.onDataIssue);
   }
 
@@ -124,78 +137,63 @@ export class OrbChart {
     this.config.width = rect.width;
     this.config.height = rect.height;
 
-    this.renderer.updateDimensions(rect.width, rect.height);
+    this.view.resize(rect.width, rect.height);
     this.physicsEngine.updateDimensions(rect.width, rect.height);
     this.reconciler.placeAwaiting(rect.width, rect.height);
-    // Resizing clears the canvas, so a paused chart repaints once.
-    if (this.playback.paused) this.draw(this.loop.now());
+    // Resizing clears the canvas, so an idle chart repaints once.
+    if (this.playback.idle) this.redrawer.run();
   }
 
   /** Advances tweens, drops exited orbs, and clears a stale hover. */
-  private settle(now: number) {
+  private sync(now: number) {
     this.orbs = this.tweener.step(this.orbs, now);
-    this.input.sync(this.orbs.filter((orb) => !this.tweener.isExiting(orb)));
+    this.view.syncInput(this.getData());
   }
 
   private draw(now: number) {
-    this.renderer.render(this.orbs, now - this.startTime, (orb) =>
-      this.reconciler.phaseOf(orb),
-    );
+    this.view.render(this.orbs, now - this.startTime);
   }
 
   private frame(now: number) {
-    this.settle(now);
+    this.sync(now);
     this.orbs = this.physicsEngine.update(this.orbs);
     this.draw(now);
   }
 
-  /**
-   * Start/resume animation
-   */
+  /** Start or resume animation. */
   start() {
     if (this.destroyed) return;
     this.playback.start();
+    this.redrawer.begin();
   }
 
-  /**
-   * Pause animation
-   */
+  /** Pause animation. */
   pause() {
     if (this.destroyed) return;
     this.playback.pause();
   }
 
-  /**
-   * Destroy chart instance. Safe to call more than once.
-   */
+  /** Destroy chart instance. Safe to call more than once. */
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
     this.playback.stop();
-    this.runTeardown();
+    this.teardown.run();
     this.orbs = [];
   }
 
-  private runTeardown() {
-    while (this.teardown.length > 0) this.teardown.pop()?.();
-  }
-
-  /**
-   * Get current orbs data, without orbs that are shrinking out
-   */
+  /** Get current orbs data, without orbs that are shrinking out. */
   getData(): Orb[] {
     return this.orbs.filter((orb) => !this.tweener.isExiting(orb));
   }
 
-  /**
-   * Update configuration. Keys set to `undefined` are ignored.
-   */
+  /** Update configuration. Keys set to `undefined` are ignored. */
   updateConfig(config: Partial<OrbChartConfig>) {
     if (this.destroyed) return;
     const previous = this.config;
     this.config = this.resolver.merge(previous, config);
-    this.renderer.updateConfig(this.config);
-    this.input.refresh();
+    this.view.updateConfig(this.config);
+    this.motion.setSetting(this.config.reducedMotion);
     if (config.width !== undefined || config.height !== undefined) {
       this.handleResize();
     }
@@ -208,11 +206,11 @@ export class OrbChart {
       // A stopped chart cannot animate, so it jumps.
       const duration = this.loop.playing ? this.config.transitionDuration : 0;
       this.reconciler.retargetAll(this.orbs, this.config, now, duration);
-      this.settle(now);
+      this.sync(now);
     }
     // Nothing else will paint a stopped chart, so draw one frame.
-    if (this.playback.paused || (radiiChanged && !this.loop.playing)) {
-      this.draw(now);
+    if (this.playback.idle || (radiiChanged && !this.loop.playing)) {
+      this.redrawer.run(radiiChanged);
     }
   }
 }

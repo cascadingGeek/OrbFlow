@@ -42,6 +42,20 @@ describe("PhysicsEngine", () => {
       expect(orb.vy).toBeCloseTo(-0.5);
     });
 
+    it("adds random drift by default and none when drift is off", () => {
+      jest.spyOn(Math, "random").mockReturnValue(1);
+      const engine = new PhysicsEngine(400, 400, { damping: 1 });
+      const drifting = makeOrb();
+      const calm = makeOrb();
+
+      engine.update([drifting]);
+      engine.update([calm], false);
+
+      expect(drifting.vx).toBeCloseTo(0.01);
+      expect(calm.vx).toBe(0);
+      expect(calm.vy).toBe(0);
+    });
+
     it("caps speed at 2 so orbs never fly off chaotically", () => {
       const engine = new PhysicsEngine(1000, 1000, { damping: 1 });
       const orb = makeOrb({ x: 500, y: 500, vx: 30, vy: 40 });

@@ -73,9 +73,10 @@ export class PhysicsEngine {
     this.height = height;
   }
 
-  update(orbs: Orb[]): Orb[] {
+  /** Steps the simulation once. `drift: false` turns the random wobble off. */
+  update(orbs: Orb[], drift = true): Orb[] {
     orbs.forEach((orb) => {
-      this.updatePosition(orb);
+      this.updatePosition(orb, drift);
       this.handleBoundaries(orb);
     });
 
@@ -99,10 +100,12 @@ export class PhysicsEngine {
     return orbs;
   }
 
-  private updatePosition(orb: Orb) {
+  private updatePosition(orb: Orb, drift: boolean) {
     // Add subtle organic movement (brownian motion)
-    orb.vx += (Math.random() - 0.5) * 0.02;
-    orb.vy += (Math.random() - 0.5) * 0.02;
+    if (drift) {
+      orb.vx += (Math.random() - 0.5) * 0.02;
+      orb.vy += (Math.random() - 0.5) * 0.02;
+    }
 
     orb.x += orb.vx;
     orb.y += orb.vy;

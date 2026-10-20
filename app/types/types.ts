@@ -47,6 +47,32 @@ export interface OrbChartConfig extends PhysicsConfig {
    * @default a no op
    */
   onDataIssue?: (issues: OrbDataIssue[]) => void;
+  /**
+   * The accessible name of the chart, read by screen readers. An empty or
+   * whitespace only string counts as unset.
+   * @default "Bubble chart"
+   */
+  ariaLabel?: string;
+  /**
+   * A longer description for screen readers. Pass `""` to clear it:
+   * `updateConfig` ignores `undefined`, and in React a removed prop keeps its
+   * last value.
+   * @default no description
+   */
+  ariaDescription?: string;
+  /**
+   * Whether orbs keep moving. The value is one of three strings:
+   * `"auto"` follows the system "reduce motion" setting, `"always"` keeps the
+   * orbs still, and `"never"` keeps them moving. A still chart settles its
+   * orbs once and draws only when data, size, or options change. Any other
+   * value logs a warning and falls back to `"auto"`.
+   *
+   * The accessible list holds one hidden button per orb. The buttons are not
+   * positioned over the orbs, so tools that click by screen position will not
+   * find them; the focus ring on the canvas shows where keyboard focus is.
+   * @default "auto"
+   */
+  reducedMotion?: "auto" | "always" | "never";
 }
 
 /**

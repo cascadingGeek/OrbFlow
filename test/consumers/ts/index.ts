@@ -18,9 +18,21 @@ const config: OrbChartConfig = {
   height: 300,
   transitionDuration: 200,
   onDataIssue: (found) => found.length,
+  ariaLabel: "Sales by region",
+  ariaDescription: "Bigger orbs mean more sales.",
+  reducedMotion: "auto",
 };
 const data: OrbDataInput[] = [{ id: "a", label: "A", value: 1 }];
 const props: OrbChartProps = { ...config, data };
+
+// reducedMotion is a union of three strings (spec 0004 AC-13).
+const motion: NonNullable<OrbChartConfig["reducedMotion"]>[] = [
+  "auto",
+  "always",
+  "never",
+];
+// @ts-expect-error: only auto, always, and never are accepted
+const badMotion: OrbChartConfig = { reducedMotion: "sometimes" };
 
 // The ref handle has exactly start, pause, and getData (spec 0003 AC-11).
 const handle: { current: OrbChartHandle | null } = { current: null };
@@ -36,6 +48,8 @@ export const used = [
   OrbChart,
   ReactOrbChart,
   props,
+  motion,
+  badMotion,
   PhysicsEngine,
   reactIssues,
 ];

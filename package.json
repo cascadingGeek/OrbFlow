@@ -59,7 +59,8 @@
     "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:package && npm run size && npm run smoke",
     "check:package": "publint && attw --pack . && node scripts/verify-dist.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "size": "size-limit"
+    "size": "size-limit",
+    "test:e2e": "npm run build && playwright test"
   },
   "keywords": [
     "orb-chart",
@@ -94,6 +95,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.57.0",
     "@size-limit/preset-small-lib": "^14.2.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

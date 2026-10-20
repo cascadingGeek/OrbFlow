@@ -6,3 +6,6 @@ dist/
 
 FEATURES.md
 UPDATE.md
+# Playwright
+test-results/
+playwright-report/

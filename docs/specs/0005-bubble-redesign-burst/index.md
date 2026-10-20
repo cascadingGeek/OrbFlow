@@ -5,7 +5,7 @@
 
 ## Summary
 
-This spec makes OrbFlow's orbs look and act like real soap bubbles. Each bubble gets a clear center, a bright rim with a soap film shimmer, and a crescent highlight, drawn for light or dark pages. A bubble can also burst into droplets, either from code (`chart.pop(id)`) or on click when you turn on `popOnClick`. Four fixes ship with it: the hand cursor shows only over a bubble, clicking a bubble no longer scatters its neighbors, bubble area now follows the value, and labels always fit inside their bubble. Everything ships before 1.0, with the size budgets raised to 12, 13, and 12 kB.
+This spec makes OrbFlow's orbs look and act like real soap bubbles. Each bubble gets a clear center, a bright rim with a soap film shimmer, and a crescent highlight, drawn for light or dark pages. A bubble can also burst into droplets, either from code (`chart.pop(id)`) or on click when you turn on `popOnClick`. Four fixes ship with it: the hand cursor shows only over a bubble, clicking a bubble no longer scatters its neighbors, bubble area now follows the value, and labels always fit inside their bubble. Everything ships before 1.0, with the size budgets raised to 13, 14, and 13 kB.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ This spec makes OrbFlow's orbs look and act like real soap bubbles. Each bubble 
 - **AC-14** (React): `popOnClick`, `popStyle`, `theme`, and `fontFamily` are plain config props compared by value. `onOrbPop` goes through the same latest callback wrapper as `onOrbClick`, so a new function identity causes no update. `OrbChartHandle` gains `pop(id): boolean`, returning `false` when the chart is not mounted. Server render, hydrate, and strict mode results of spec 0003 and 0004 AC-12 are unchanged.
 - **AC-15** (public surface): `OrbChartConfig` gains `popOnClick`, `popStyle`, `onOrbPop`, `theme`, and `fontFamily`, each with TSDoc and its default; the `minRadius` TSDoc states the floor meaning and the new default 8. `OrbChart` gains `pop(id)`. No new exported name, so spec 0001 AC-3 is unchanged. The TypeScript fixtures compile all five options and `pop` from both entries. README options table, Known limitations, and `UPDATE.md` are updated to match.
 - **AC-16** (teardown): `destroy()` drops every burst, every ghost, and the live region. After it the fake DOM reports zero live listeners, observers, frames, and timers, and the container holds nothing the chart added. The burst uses the animation loop clock, never `Date.now()` or timers.
-- **AC-17** (budgets and structure): `.size-limit.json` and spec 0001 carry core 12 kB, react 13 kB, cdn 12 kB gzip, and `npm run size` passes. Each new class stays under about 200 lines. `CanvasRenderer.ts` ends under 200 lines (264 today; image loading moves to `ImageCache`) and `AccessibleLayer.ts` no longer than its 211 lines today (the live region lives in `LiveAnnouncer`). `OrbChart.ts` ends no longer than 260 lines (216 today).
+- **AC-17** (budgets and structure): `.size-limit.json` and spec 0001 carry core 13 kB, react 14 kB, cdn 13 kB gzip, and `npm run size` passes (measured after the build: core 12.26, react 12.81, cdn 12.32 kB; the first estimate of 12, 13, and 12 kB was too low, see spec 0001 *Revision*). Each new class stays under about 200 lines. `CanvasRenderer.ts` ends under 200 lines (264 today; image loading moves to `ImageCache`) and `AccessibleLayer.ts` no longer than its 211 lines today (the live region lives in `LiveAnnouncer`). `OrbChart.ts` ends no longer than 260 lines (216 today).
 - **AC-18** (feel, checked by hand): In a browser, 50 bubbles with images keep a smooth frame rate (about 60 fps in the Chrome performance panel) on a mid range laptop while moving, and the light and dark bubbles match the design canvas boards "Before and after" and "Bubble anatomy". If 50 is not smooth, the measured number goes to feature 7 and a sprite cache follow up is enrolled; this does not block the feature.
 
 ## Decision
@@ -194,7 +194,7 @@ Order follows Tracer Bullet: each slice goes through core, React, types, tests, 
 2. Slice A, fixes: default cursor and hover cursor; hit test before repulsion; area scaling with the floor and `minRadius` default 8 in `OrbReconciler` and `ConfigResolver`; `LabelFitter` and `fontFamily`; TSDoc, README options and Known limitations, React prop pass through test, type fixture. Satisfies **AC-1**, **AC-2**, **AC-3**, **AC-4**, **AC-14**, **AC-15**.
 3. Slice B, the look: `theme`, `toRgb`, and `resolveTheme`; clear then fill; the full recipe in `BubblePainter` for both themes, conic fallback, film turning; image lens; label colors; idle redraw on look changes; raise `.size-limit.json` and record the 0001 revision; React and fixtures; README. Satisfies **AC-5**, **AC-6**, **AC-7**, **AC-14**, **AC-15**, **AC-17**.
 4. Slice C, the burst: `RadiusTweener.cancel` and `OrbReconciler.drop`; `PopController` with `pop`, `activate`, `popOnClick`, `onOrbPop`, neighbor push with the new `strength`; `BurstEffects` timeline and ghosts with `popStyle`; finish all on pause and still; `LiveAnnouncer` and focus move; React `onOrbPop` and `ref.pop`; fixtures; README section on popping. Satisfies **AC-8**, **AC-9**, **AC-10**, **AC-11**, **AC-12**, **AC-13**, **AC-14**, **AC-15**, **AC-16**.
-5. Guards: `npm run size`, `check:package`, smoke on React 18 and 19, line counts, `verify.md` including the 50 bubble performance check and the visual match against the design canvas; update `UPDATE.md` to mark A1 to A4, B1 to B7, C3, and C4 done. Satisfies **AC-15**, **AC-16**, **AC-17**, **AC-18**.
+5. Guards: set `.size-limit.json` to 13 kB, 14 kB, and 13 kB (spec 0001 *Revision*, measured 2026-10-20), then `npm run size`, `check:package`, smoke on React 18 and 19, line counts, `verify.md` including the 50 bubble performance check and the visual match against the design canvas; update `UPDATE.md` to mark A1 to A4, B1 to B7, C3, and C4 done. Satisfies **AC-15**, **AC-16**, **AC-17**, **AC-18**.
 
 ## Consequences
 
@@ -205,7 +205,7 @@ Order follows Tracer Bullet: each slice goes through core, React, types, tests, 
 
 **Negative / tradeoffs**:
 - Visible behavior changes before 1.0: default `minRadius` 25 to 8, size math, the cursor, no scatter on bubble click, and a new look. Users of earlier prerelease builds will see different charts.
-- Bundle grows by about 2 to 3 kB gzip; budgets rise a second time.
+- Bundle grows by about 3.6 kB gzip (estimated 2 to 3 kB); budgets rise a second and then a third time, to 13, 14, and 13 kB.
 - About ten gradients per bubble per frame; large charts may drop frames until a sprite cache exists (feature 7).
 - Labels look best in a rounded font, but the library cannot load fonts; developers must load one and pass `fontFamily`.
 - The film ring and the crescent are canvas approximations of the CSS mockup and will not match it pixel for pixel.

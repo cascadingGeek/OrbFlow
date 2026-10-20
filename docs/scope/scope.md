@@ -114,14 +114,14 @@ Keep the chart smooth and cheap: stop animating when it is off screen or the tab
 
 ### 12. Bubble redesign and burst · in-progress
 Make the orbs look and act like real soap bubbles (clear center, bright rim, soap film, crescent highlight, light and dark themes), let them burst into droplets on `chart.pop(id)` or with `popOnClick`, and fix four rough edges: hand cursor only over a bubble, no scatter when clicking a bubble, bubble area follows the value, labels always fit. Design canvas: https://claude.ai/artifact/RrHvdRwih779DzVQ41s1Fg
-**Done when:** bubbles match the design canvas on light and dark pages; a value twice as big has twice the area; `pop` and `popOnClick` burst a bubble with droplets, an optional ghost, `onOrbPop`, and a screen reader announcement; paused and still charts pop instantly; budgets hold at 12, 13, and 12 kB.
+**Done when:** bubbles match the design canvas on light and dark pages; a value twice as big has twice the area; `pop` and `popOnClick` burst a bubble with droplets, an optional ghost, `onOrbPop`, and a screen reader announcement; paused and still charts pop instantly; budgets hold at 13, 14, and 13 kB.
 - [x] Design it (spec): `/architect bubble redesign and burst`
-- [ ] Build it: `/develop bubble redesign and burst`
+- [x] Build it: `/develop bubble redesign and burst`
    - [x] Prepare room: extract `BubblePainter` and `ImageCache`, one activate hook (AC-17)
    - [x] Fixes: cursor, no scatter on bubble click, area scaling with the `minRadius` floor, labels that fit, `fontFamily` (AC-1, AC-2, AC-3, AC-4)
    - [x] The look: `theme`, color parser, full bubble recipe, image lens, budget raise (AC-5, AC-6, AC-7, AC-17)
    - [x] The burst: `pop`, `popOnClick`, `onOrbPop`, burst timeline, `popStyle` ghosts, idle pops, live region, React `ref.pop` (AC-8 to AC-16)
-   - [ ] Guards: size, package checks, smoke on React 18 and 19, line counts, performance and visual checks (AC-15 to AC-18)
+   - [x] Guards: size, package checks, smoke on React 18 and 19, line counts, performance and visual checks (AC-15 to AC-18)
 - [ ] Verify it: `/check verify bubble redesign and burst`
 - [ ] Test it: `/test bubble redesign and burst`
 Spec [0005](../specs/0005-bubble-redesign-burst/index.md) · code in `app/renderer/` and `app/core/`

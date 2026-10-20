@@ -6,8 +6,11 @@
     "@testing-library/jest-dom",
     "jest-environment-jsdom"
   ],
-  "e2eTool": "none",
+  "e2eTool": "playwright",
   "testDir": "beside the source",
   "filePattern": "*.test.ts",
-  "packageManager": "npm"
+  "packageManager": "npm",
+  "e2eDir": "e2e",
+  "e2eFilePattern": "*.e2e.ts",
+  "e2eRunCommand": "npm run test:e2e"
 }

@@ -69,9 +69,44 @@ describe("CanvasRenderer", () => {
 
     renderer.render([makeOrb()]);
 
-    expect(
-      contexts[0].calls.find((c) => c.method === "fillRect")?.args,
-    ).toEqual([0, 0, 300, 200]);
+    // covers: AC-5 (clear first, so a transparent background shows the page)
+    const order = contexts[0].calls.map((c) => c.method);
+    expect(order.indexOf("clearRect")).toBeLessThan(order.indexOf("fillRect"));
+    expect(calls("clearRect")[0].args).toEqual([0, 0, 300, 200]);
+    expect(calls("fillRect")[0].args).toEqual([0, 0, 300, 200]);
+  });
+
+  describe("theme (AC-5)", () => {
+    const labelFills = (config: Record<string, unknown>) => {
+      const renderer = new CanvasRenderer(container, config);
+      const ctx = contexts[contexts.length - 1];
+      const fills: unknown[] = [];
+      const fillText = ctx.fillText as (...a: unknown[]) => void;
+      ctx.fillText = (...a: unknown[]) => {
+        fills.push(ctx.fillStyle);
+        fillText(...a);
+      };
+      renderer.render([makeOrb({ radius: 50 })]);
+      return { renderer, fills };
+    };
+
+    it("draws white labels on the default dark background", () => {
+      expect(new Set(labelFills({}).fills)).toEqual(new Set(["#ffffff"]));
+    });
+
+    it("draws violet labels with a light edge on a light background", () => {
+      const { fills } = labelFills({ backgroundColor: "#f5f0ff" });
+      expect(fills).toContain("#2b1f47");
+      expect(fills).toContain("rgba(255,255,255,0.7)");
+    });
+
+    it("follows a theme change from updateConfig", () => {
+      const { renderer, fills } = labelFills({ backgroundColor: "#000" });
+      fills.length = 0;
+      renderer.updateConfig({ backgroundColor: "#000", theme: "light" });
+      renderer.render([makeOrb({ radius: 50 })]);
+      expect(fills).toContain("#2b1f47");
+    });
   });
 
   it("draws one bubble with its label and value for each orb", () => {

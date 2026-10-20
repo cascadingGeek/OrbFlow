@@ -5,6 +5,7 @@ import { OrbChart } from "./OrbChart";
 import {
   dispatchMouse,
   installFakeCanvas,
+  FakeResizeObserver,
   installFakeMatchMedia,
   installFakeResizeObserver,
   installFrameQueue,
@@ -245,6 +246,16 @@ describe("OrbChart popping (spec 0005)", () => {
     });
   });
 
+  it("resets the cursor when setData removes the hovered bubble (AC-1)", () => {
+    const chart = make();
+    dispatchMouse(canvas(), "pointermove", 100, 150);
+    expect(canvas().style.cursor).toBe("pointer");
+
+    chart.setData([row("b", 1)]);
+
+    expect(canvas().style.cursor).toBe("default");
+  });
+
   describe("idle pops (AC-11)", () => {
     it("pops a paused chart in one draw and queues no frame", () => {
       const chart = make();
@@ -308,6 +319,49 @@ describe("OrbChart popping (spec 0005)", () => {
       expect(frames.pending()).toBe(1);
     });
 
+    it("turns the film once every 14 s while moving (AC-6)", () => {
+      make();
+      clock = 3500;
+      const mark = contexts[0].gradients.length;
+      frames.step();
+      const film = contexts[0].gradients
+        .slice(mark)
+        .find((g) => g.kind === "conic");
+      expect(film?.args[0]).toBeCloseTo((200 * Math.PI) / 180 + Math.PI / 2);
+    });
+
+    it("does nothing on pause after destroy", () => {
+      const chart = make();
+      chart.pop("a");
+      chart.destroy();
+      const before = draws();
+      chart.pause();
+      expect(draws()).toBe(before);
+    });
+
+    it("redraws an idle chart once for each look change (AC-5)", () => {
+      const chart = make();
+      chart.pause();
+      for (const change of [
+        { theme: "light" },
+        { backgroundColor: "#ffffff" },
+        { fontFamily: "Nunito" },
+      ] as const) {
+        const before = draws();
+        chart.updateConfig(change);
+        expect(draws()).toBe(before + 1);
+      }
+      expect(frames.pending()).toBe(0);
+    });
+
+    it("warns once for a bad theme and draws the dark look (AC-5)", () => {
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+      const chart = make({ theme: "sepia" as never });
+      chart.updateConfig({ theme: "sepia" as never });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain("theme");
+    });
+
     it("holds the film at its start angle while paused", () => {
       const chart = make();
       chart.pause();
@@ -346,6 +400,32 @@ describe("OrbChart popping (spec 0005)", () => {
       expect(dashes(mark)).toBe(0);
     });
 
+    it("grows a popped id back in from nothing (AC-12)", () => {
+      const chart = make({ popStyle: "ghost" });
+      chart.pop("a");
+      chart.updateConfig({ transitionDuration: 400 });
+
+      chart.setData([row("a", 1), row("b", 1)]);
+
+      expect(chart.getData().find((o) => o.id === "a")?.radius).toBe(0);
+    });
+
+    it("keeps a ghost at its pixel position when the container resizes (AC-12)", () => {
+      const chart = make({ popStyle: "ghost" });
+      chart.pause();
+      chart.pop("b");
+      setElementSize(container, 200, 100);
+      const mark = contexts[0].calls.length;
+
+      FakeResizeObserver.instances[0].trigger();
+
+      // Outside the new 200 px canvas, yet not clamped into it.
+      const ghost = since("arc", mark).find(
+        (c) => c.args[0] === 300 && c.args[2] === 40,
+      );
+      expect(ghost).toBeDefined();
+    });
+
     it("leaves no ghost by default", () => {
       const chart = make();
       chart.pause();
@@ -372,6 +452,16 @@ describe("OrbChart popping (spec 0005)", () => {
       chart.pop("a");
       expect(document.activeElement?.textContent).toMatch(/^B/);
     });
+  });
+
+  it("moves focus to the list when the last bubble pops (AC-13)", () => {
+    const chart = make();
+    chart.pop("b");
+    buttons()[0].focus();
+
+    chart.pop("a");
+
+    expect(document.activeElement).toBe(container.querySelector("ul"));
   });
 
   describe("teardown (AC-16)", () => {

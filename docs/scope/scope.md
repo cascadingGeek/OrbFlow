@@ -2,7 +2,7 @@
 
 A lightweight, physics based bubble (orb) chart library with a zero dependency core. Built for developers who want a chart that feels more alive than a standard bar or pie, and who need it to install fast and run reliably in production.
 
-**Release plan:** v1.0.0 supports vanilla JavaScript and React only, with a stable API. Later minor releases add one framework each, without breaking changes: v1.1 Vue, v1.2 Svelte, v1.3 Angular. The goal of v1 is developer adoption and credibility, so every v1 feature is about being easy to install, easy to integrate, and solid in production. No new chart features before 1.0.0 is on npm.
+**Release plan:** v1.0.0 supports vanilla JavaScript and React only, with a stable API. Later minor releases add one framework each, without breaking changes: v1.1 Vue, v1.2 Svelte, v1.3 Angular. The goal of v1 is developer adoption and credibility, so every v1 feature is about being easy to install, easy to integrate, and solid in production. No new chart features before 1.0.0 is on npm. One exception, chosen on purpose: feature 12 (bubble redesign and burst) ships before 1.0, because it changes visible defaults that would otherwise need a breaking 2.0 (spec 0005).
 **Build approach:** Tracer Bullet (each feature goes end to end through core, React wrapper, types, tests, and docs, so the package stays shippable after every slice).
 **Workflow:** Beta (after `/develop`, run `/check verify`, then `/test`). The project default level of rigor. `/architect` is the recommended first stop for a feature with a real decision, but skippable when you already know the build. Any feature can carry its own tag (e.g. `· GA`) to do more or less.
 
@@ -21,6 +21,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 5 | Production ready React component | Slice 1 | done |
 | 6 | Accessibility and reduced motion | Slice 2 | in-progress |
 | 7 | Performance and idle behavior | Slice 2 | planned |
+| 12 | Bubble redesign and burst | Slice 2 | in-progress |
 | 8 | README and API reference | Slice 3 | planned |
 | 9 | Runnable examples | Slice 3 | planned |
 | 10 | Live demo page | Slice 3 | planned |
@@ -110,6 +111,20 @@ Spec [0004](../specs/0004-accessibility-reduced-motion/index.md) · code in `app
 Keep the chart smooth and cheap: stop animating when it is off screen or the tab is hidden, and know how many orbs it can handle at a smooth frame rate.
 **Done when:** the animation loop stops while the chart is hidden and resumes when visible; a documented orb count runs smoothly on a mid range laptop and phone; the limit is stated in the docs.
 - [ ] Design it (spec): `/architect performance and idle behavior`
+
+### 12. Bubble redesign and burst · in-progress
+Make the orbs look and act like real soap bubbles (clear center, bright rim, soap film, crescent highlight, light and dark themes), let them burst into droplets on `chart.pop(id)` or with `popOnClick`, and fix four rough edges: hand cursor only over a bubble, no scatter when clicking a bubble, bubble area follows the value, labels always fit. Design canvas: https://claude.ai/artifact/RrHvdRwih779DzVQ41s1Fg
+**Done when:** bubbles match the design canvas on light and dark pages; a value twice as big has twice the area; `pop` and `popOnClick` burst a bubble with droplets, an optional ghost, `onOrbPop`, and a screen reader announcement; paused and still charts pop instantly; budgets hold at 13, 14, and 13 kB.
+- [x] Design it (spec): `/architect bubble redesign and burst`
+- [x] Build it: `/develop bubble redesign and burst`
+   - [x] Prepare room: extract `BubblePainter` and `ImageCache`, one activate hook (AC-17)
+   - [x] Fixes: cursor, no scatter on bubble click, area scaling with the `minRadius` floor, labels that fit, `fontFamily` (AC-1, AC-2, AC-3, AC-4)
+   - [x] The look: `theme`, color parser, full bubble recipe, image lens, budget raise (AC-5, AC-6, AC-7, AC-17)
+   - [x] The burst: `pop`, `popOnClick`, `onOrbPop`, burst timeline, `popStyle` ghosts, idle pops, live region, React `ref.pop` (AC-8 to AC-16)
+   - [x] Guards: size, package checks, smoke on React 18 and 19, line counts, performance and visual checks (AC-15 to AC-18)
+- [ ] Verify it: `/check verify bubble redesign and burst`
+- [x] Test it: `/test bubble redesign and burst`
+Spec [0005](../specs/0005-bubble-redesign-burst/index.md) · code in `app/renderer/` and `app/core/`
 
 ## Slice 3: Launch kit
 

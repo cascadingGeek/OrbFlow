@@ -52,6 +52,11 @@ export class RadiusTweener {
     this.start(orb, toRadius, now, duration, "update");
   }
 
+  /** Stops the orb's tween where it is, without calling `onExited`. */
+  cancel(id: string) {
+    this.transitions.delete(id);
+  }
+
   /** True while the orb is shrinking out. */
   isExiting(orb: Orb): boolean {
     return this.transitions.get(orb.id)?.phase === "exit";

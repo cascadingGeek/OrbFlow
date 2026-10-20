@@ -24,4 +24,20 @@ describe("<OrbChart> on the server (AC-1)", () => {
     expect(warn).not.toHaveBeenCalled();
     jest.restoreAllMocks();
   });
+
+  it("renders the same div with the spec 0005 props (AC-14)", () => {
+    const html = renderToString(
+      <OrbChart
+        data={[{ id: "a", label: "A", value: 1 }]}
+        className="c"
+        popOnClick
+        popStyle="ghost"
+        theme="light"
+        fontFamily="Nunito"
+        onOrbPop={() => {}}
+      />,
+    );
+
+    expect(html).toBe('<div class="c" style="width:100%;height:100%"></div>');
+  });
 });

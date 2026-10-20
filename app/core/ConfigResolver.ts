@@ -9,6 +9,8 @@ export type ResolvedConfig = Required<
 const DEFAULT_TRANSITION_MS = 400;
 const DEFAULT_ARIA_LABEL = "Bubble chart";
 const MOTION_VALUES = ["auto", "always", "never"];
+const DEFAULT_MIN_RADIUS = 8;
+const DEFAULT_FONT = "Inter, system-ui, sans-serif";
 
 // Cool color palette (Blues, Cyans, Purples)
 const DEFAULT_COLORS = [
@@ -24,9 +26,13 @@ const DEFAULT_COLORS = [
 
 /**
  * Owns the option defaults, the merge that ignores `undefined`, and the
- * checks for `transitionDuration`, `ariaLabel`, and `reducedMotion`.
+ * checks for `transitionDuration`, `ariaLabel`, `reducedMotion`, `minRadius`,
+ * `fontFamily`, `theme`, and `popStyle`. The last four warn once per bad
+ * value, not on every `updateConfig`.
  */
 export class ConfigResolver {
+  private readonly warned = new Set<string>();
+
   /** Fills every default. `size` is the fallback width and height. */
   resolve(
     config: OrbChartConfig,
@@ -36,7 +42,7 @@ export class ConfigResolver {
       width: config.width ?? size.width,
       height: config.height ?? size.height,
       backgroundColor: config.backgroundColor ?? "#0a0e1a",
-      minRadius: config.minRadius ?? 25,
+      minRadius: this.validMinRadius(config.minRadius),
       maxRadius: config.maxRadius ?? 80,
       colorScheme: config.colorScheme ?? DEFAULT_COLORS,
       enableTooltip: config.enableTooltip ?? true,
@@ -47,6 +53,11 @@ export class ConfigResolver {
       ariaLabel: this.validLabel(config.ariaLabel),
       ariaDescription: config.ariaDescription ?? "",
       reducedMotion: this.validMotion(config.reducedMotion),
+      popOnClick: config.popOnClick ?? false,
+      popStyle: this.oneOf("popStyle", config.popStyle, ["remove", "ghost"]),
+      onOrbPop: config.onOrbPop ?? (() => {}),
+      theme: this.oneOf("theme", config.theme, ["auto", "light", "dark"]),
+      fontFamily: this.validFont(config.fontFamily),
       damping: config.damping,
       minVelocity: config.minVelocity,
       bounceCoefficient: config.bounceCoefficient,
@@ -68,7 +79,62 @@ export class ConfigResolver {
     merged.transitionDuration = this.validDuration(merged.transitionDuration);
     merged.ariaLabel = this.validLabel(merged.ariaLabel);
     merged.reducedMotion = this.validMotion(merged.reducedMotion);
+    merged.minRadius = this.validMinRadius(merged.minRadius);
+    merged.fontFamily = this.validFont(merged.fontFamily);
+    merged.theme = this.oneOf("theme", merged.theme, ["auto", "light", "dark"]);
+    merged.popStyle = this.oneOf("popStyle", merged.popStyle, [
+      "remove",
+      "ghost",
+    ]);
     return merged;
+  }
+
+  private validMinRadius(value: unknown): number {
+    if (value === undefined) return DEFAULT_MIN_RADIUS;
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+      return value;
+    }
+    this.warnOnce(
+      "minRadius",
+      value,
+      `minRadius must be a number of 0 or more, using ${DEFAULT_MIN_RADIUS}.`,
+    );
+    return DEFAULT_MIN_RADIUS;
+  }
+
+  private validFont(value: unknown): string {
+    if (value === undefined) return DEFAULT_FONT;
+    if (typeof value === "string" && value.trim() !== "") return value;
+    this.warnOnce(
+      "fontFamily",
+      value,
+      `fontFamily must be a non empty string, using "${DEFAULT_FONT}".`,
+    );
+    return DEFAULT_FONT;
+  }
+
+  // The first allowed value is the default.
+  private oneOf<T extends string>(
+    name: string,
+    value: unknown,
+    allowed: T[],
+  ): T {
+    if (value === undefined) return allowed[0];
+    if (allowed.includes(value as T)) return value as T;
+    const list = allowed.map((v) => `"${v}"`).join(" or ");
+    this.warnOnce(
+      name,
+      value,
+      `${name} must be ${list}, using "${allowed[0]}".`,
+    );
+    return allowed[0];
+  }
+
+  private warnOnce(name: string, value: unknown, message: string) {
+    const key = `${name}:${typeof value}:${String(value)}`;
+    if (this.warned.has(key)) return;
+    this.warned.add(key);
+    console.warn(`OrbFlow: ${message}`);
   }
 
   private validLabel(value: string | undefined): string {

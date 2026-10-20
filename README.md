@@ -1,16 +1,52 @@
 # Orb Flow 🫧
 
-A lightweight, physics-based orb chart package with smooth animations and realistic interactions. Zero dependencies for the core library!
+A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas. Bubbles look like real soap bubbles, float, push each other apart, react to clicks and taps, and can burst into droplets. The core has zero runtime dependencies, and a React component is included.
 
 ## Features
 
-- Beautiful glassy orb design
-- Smooth physics-based animations
-- Works with vanilla JavaScript and React
-- Zero dependencies (core library)
-- Responsive and touch-friendly
-- Support for images inside orbs
-- Customizable colors and styling
+**Bubble look**
+
+- Soap bubbles: a clear center, a bright rim, a shimmering soap film, a crescent highlight, and a small glint.
+- Drawn for light or dark pages. `theme: "auto"` picks from your `backgroundColor`.
+- Images sit inside the bubble like a lens, with the glass drawn on top.
+- Labels always fit inside their bubble, and hide when the bubble is too small to read them.
+
+**Bubble physics**
+
+- Bubbles never overlap: when two touch, they push apart.
+- Click or tap empty space and the bubbles nearby scatter away from it. Clicking a bubble never scatters its neighbors.
+- A gentle idle float and a slight random drift keep the chart alive.
+- Soft bounce off the chart edges.
+
+**Data**
+
+- Bubble area follows each item's `value`: a value twice as big gets a bubble with twice the area. `minRadius` keeps tiny values visible.
+- Updates are smooth: `setData` matches bubbles by `id`, so existing bubbles keep their place and animate to their new size, new ones grow in, and removed ones shrink out.
+- Bad entries (a missing, empty, or duplicate `id`, a label that is not a string, or a value that is not a number of 0 or more) are skipped and reported to you, never thrown.
+- Optional image inside each bubble, plus a color per bubble or a palette for the rest.
+
+**Interaction**
+
+- Built in tooltip on hover, on tap (touch), and on keyboard focus.
+- `onOrbClick` and `onOrbHover` callbacks, so you can show your own details card or drawer.
+- Pop a bubble with `chart.pop(id)`, or let users pop them with `popOnClick`. It bursts into droplets, and can leave a dashed ghost behind.
+- The hand cursor shows only over a bubble.
+- Works with mouse, pen, and touch (Pointer Events).
+
+**Accessibility**
+
+- The chart has an accessible name and an optional description.
+- Screen readers get a hidden list with one real button per bubble (label, value, category).
+- Keyboard: Tab into the chart, move between bubbles with the arrow keys, Home, and End, press Enter or Space to activate a bubble, and Escape to hide the tooltip. A focus ring shows which bubble has focus.
+- Respects the system "reduce motion" setting: bubbles settle once and stay still, and a pop happens at once, with no burst.
+- Each pop is announced to screen readers ("BTC popped"), and keyboard focus moves to the next bubble.
+
+**Production ready**
+
+- Works with vanilla JavaScript and React 18 or 19, including server rendered React and strict mode.
+- Fills its container and redraws on resize, with sharp drawing on high density screens.
+- `destroy()` removes every listener, observer, and element, and is safe to call twice.
+- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 12 kB gzip.
 
 ## Installation
 
@@ -22,85 +58,232 @@ yarn add orbflow
 pnpm add orbflow
 ```
 
-## Quick Start
+## Quick start
 
 ### Vanilla JavaScript
 
-```javascript
-import OrbChart from "orbflow";
+Give the container a size; the chart fills it.
 
-const chart = new OrbChart("#chart-container", {
-  width: 800,
-  height: 600,
-  onOrbClick: (orb) => console.log("Clicked:", orb),
+```html
+<div id="chart" style="width: 800px; height: 600px"></div>
+```
+
+```javascript
+import { OrbChart } from "orbflow";
+
+const chart = new OrbChart("#chart", {
+  onOrbClick: (orb) => console.log("Clicked:", orb.label),
 });
 
 chart.setData([
-  { id: "1", label: "Bitcoin", value: 45, color: "#f7931a" },
-  { id: "2", label: "Ethereum", value: 30, color: "#627eea" },
-  { id: "3", label: "Solana", value: 15, color: "#00d4aa" },
+  { id: "btc", label: "BTC", value: 45, color: "#f7931a" },
+  { id: "eth", label: "ETH", value: 30, color: "#627eea" },
+  { id: "sol", label: "SOL", value: 15, color: "#00d4aa" },
 ]);
+// The animation starts on the first setData call.
 
-// chart.start() is called automatically if data is set, but can be controlled manually
+// Later, when the chart goes away:
+chart.destroy();
 ```
+
+The first argument is a CSS selector or an `HTMLElement`.
 
 ### React
 
 ```tsx
+import { useMemo } from "react";
 import { OrbChart } from "orbflow/react";
 
 function App() {
-  const data = [
-    { id: "1", label: "Bitcoin", value: 45, color: "#f7931a" },
-    { id: "2", label: "Ethereum", value: 30, color: "#627eea" },
-  ];
+  const data = useMemo(
+    () => [
+      { id: "btc", label: "BTC", value: 45, color: "#f7931a" },
+      { id: "eth", label: "ETH", value: 30, color: "#627eea" },
+    ],
+    [],
+  );
 
   return (
-    <div style={{ width: "800px", height: "600px" }}>
-      <OrbChart
-        data={data}
-        onOrbClick={(orb) => console.log(orb)}
-        enableTooltip={true}
-        floatAmplitude={1.5}
-      />
+    <div style={{ width: 800, height: 600 }}>
+      <OrbChart data={data} onOrbClick={(orb) => console.log(orb.label)} />
     </div>
   );
 }
 ```
 
-## API Reference
+- The component renders a `div` that fills its parent (`width: 100%; height: 100%`). Pass `className` or `style` to change it.
+- `data` is sent to the chart whenever its reference changes, so keep it stable with `useMemo` or state.
+- Callbacks can be new functions on every render; the newest one always runs, and a new function never causes an update.
+- Config props are compared by value, so inline objects and arrays cost nothing.
+- A config prop that becomes `undefined` keeps its last value. Pass an explicit value to change it.
 
-### Configuration Options
+**Server rendering.** The component renders an empty `div` on the server and creates the canvas after mount. In the Next.js App Router, render it from a Client Component (a file that starts with `"use client"`) when you pass callbacks.
 
-| Option              | Type     | Default          | Description                      |
-| ------------------- | -------- | ---------------- | -------------------------------- |
-| `width`             | number   | container width  | Chart width in pixels            |
-| `height`            | number   | container height | Chart height in pixels           |
-| `minRadius`         | number   | 20               | Minimum orb radius               |
-| `maxRadius`         | number   | 200              | Maximum orb radius               |
-| `backgroundColor`   | string   | '#0a0e1a'        | Canvas background color          |
-| `colorScheme`       | string[] | [...]            | Default color palette            |
-| `enableTooltip`     | boolean  | true             | Show tooltips on hover           |
-| `onOrbClick`        | function | -                | Click event handler              |
-| `onOrbHover`        | function | -                | Hover event handler              |
-| `damping`           | number   | 0.995            | Physics damping factor           |
-| `minVelocity`       | number   | 0.1              | Minimum velocity before stopping |
-| `bounceCoefficient` | number   | 0.8              | Bounce elasticity (0-1)          |
-| `floatAmplitude`    | number   | 1.5              | Idle floating movement range     |
-| `floatSpeed`        | number   | 0.001            | Idle floating speed              |
+**Controlling the chart from React.** A ref gives you `start()`, `pause()`, `getData()`, and `pop(id)`:
 
-### Data Format (`OrbDataInput`)
+```tsx
+import { useRef } from "react";
+import { OrbChart, type OrbChartHandle } from "orbflow/react";
+
+const ref = useRef<OrbChartHandle>(null);
+
+<OrbChart ref={ref} data={data} />;
+<button onClick={() => ref.current?.pause()}>Pause</button>;
+```
+
+### CDN (no build step)
+
+```html
+<div id="chart" style="width: 800px; height: 600px"></div>
+<script src="https://unpkg.com/orbflow/dist/orbflow.iife.js"></script>
+<script>
+  const chart = new OrbFlow.OrbChart("#chart");
+  chart.setData([{ id: "a", label: "A", value: 10 }]);
+</script>
+```
+
+## Showing details when a bubble is clicked
+
+OrbFlow does not open a modal. A modal would cover the chart and break the playful feel. Instead, it gives you the clicked bubble, and you show details your way. Put any extra fields in `metadata`; they come back on the clicked orb.
+
+**Floating card near the bubble** (vanilla):
+
+```javascript
+const card = document.querySelector("#card");
+
+const chart = new OrbChart("#chart", {
+  enableTooltip: false, // the card replaces the built in tooltip
+  onOrbClick: (orb, event) => {
+    card.textContent = `${orb.label}: ${orb.metadata?.price}`;
+    card.style.left = `${event.offsetX}px`;
+    card.style.top = `${event.offsetY}px`;
+    card.hidden = false;
+  },
+});
+```
+
+**Side drawer** (React):
+
+```tsx
+const [selectedId, setSelectedId] = useState<string | null>(null);
+const selected = records.find((r) => r.id === selectedId);
+
+<OrbChart data={data} onOrbClick={(orb) => setSelectedId(orb.id)} />;
+{
+  selected && <Drawer record={selected} onClose={() => setSelectedId(null)} />;
+}
+```
+
+`onOrbClick` also runs when a keyboard user presses Enter or Space on a focused bubble, so your details view works for everyone. When the event comes from the keyboard, `offsetX` and `offsetY` do not point at the bubble, so a drawer is the safer pattern if position matters.
+
+## Popping bubbles
+
+Any live bubble can burst: it stretches, snaps, sends out a ring and a few droplets, and is gone in about 0.8 seconds. The rest of the chart drifts gently into the gap.
+
+```javascript
+const chart = new OrbChart("#chart", {
+  popOnClick: true, // click, tap, Enter, or Space pops a bubble (after onOrbClick)
+  popStyle: "ghost", // leave a dashed outline where it was ("remove" leaves nothing)
+  onOrbPop: (orb) => console.log(`${orb.label} popped`),
+});
+
+chart.pop("btc"); // true if "btc" was a live bubble, false otherwise
+```
+
+- A popped bubble is gone from `getData()`, from hit testing, and from the screen reader list at once. `onOrbPop` runs exactly once per pop.
+- A paused or still (reduced motion) chart pops instantly, with no burst, and stays paused.
+- Ghosts are not clickable. The next `setData` clears them, and an id that comes back in the data grows in again as a new bubble. Your data is the source of truth.
+- Screen readers hear "&lt;label&gt; popped" through a polite live region.
+
+## API reference
+
+### `new OrbChart(container, config?)`
+
+| Method                  | What it does                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `setData(data)`         | Loads or updates data. Bubbles are matched by `id`. Starts the animation the first time. Clears ghosts.                         |
+| `pop(id)`               | Bursts the live bubble `id`. Returns `false` for an unknown id, a bubble already popped or shrinking out, or after `destroy()`. |
+| `updateConfig(partial)` | Changes options. Keys set to `undefined` are ignored.                                                                           |
+| `start()`               | Starts or resumes the animation.                                                                                                |
+| `pause()`               | Pauses the animation. A paused chart stays paused when data or options change, and shows the change as one still frame.         |
+| `getData()`             | The current bubbles (`Orb[]`), without the ones shrinking out. Treat them as read only.                                         |
+| `destroy()`             | Removes the chart and everything it added. Safe to call more than once.                                                         |
+
+### Options (`OrbChartConfig`)
+
+The React component takes the same options as props.
+
+| Option               | Type                            | Default                          | Description                                                                                                |
+| -------------------- | ------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `width`              | number                          | container width                  | Starting width in pixels. The chart then follows its container's size.                                     |
+| `height`             | number                          | container height                 | Starting height in pixels. The chart then follows its container's size.                                    |
+| `backgroundColor`    | string                          | `"#0a0e1a"`                      | Canvas background color. `"transparent"` shows the page behind the chart.                                  |
+| `theme`              | `"auto" \| "light" \| "dark"`   | `"auto"`                         | Bubble look. `"auto"` is light when `backgroundColor` is a light hex or `rgb()` color, dark otherwise.     |
+| `fontFamily`         | string                          | `"Inter, system-ui, sans-serif"` | Font for bubble labels. Load the font on your page first; the chart does not load fonts.                   |
+| `minRadius`          | number                          | `8`                              | The smallest radius in pixels, a floor so tiny values stay visible. Area follows value above it.           |
+| `maxRadius`          | number                          | `80`                             | Radius of the bubble with the largest value, in pixels.                                                    |
+| `colorScheme`        | string[]                        | 8 blues, cyans, and purples      | Colors used, in order, for bubbles without their own `color`. Use hex or `rgb()` colors; others draw blue. |
+| `enableTooltip`      | boolean                         | `true`                           | Show the built in tooltip.                                                                                 |
+| `onOrbClick`         | `(orb, event) => void`          | none                             | Runs on click, tap, or Enter or Space on a focused bubble.                                                 |
+| `onOrbHover`         | `(orb \| null) => void`         | none                             | Runs when the hovered bubble changes; `null` when none is hovered.                                         |
+| `onDataIssue`        | `(issues) => void`              | none                             | Runs once per `setData` call that skipped any entry. See `OrbDataIssue`.                                   |
+| `popOnClick`         | boolean                         | `false`                          | Click, tap, Enter, or Space pops a bubble, after `onOrbClick` runs.                                        |
+| `popStyle`           | `"remove" \| "ghost"`           | `"remove"`                       | What a popped bubble leaves behind: nothing, or a dashed ghost until the next `setData`.                   |
+| `onOrbPop`           | `(orb) => void`                 | none                             | Runs once for every bubble that pops, with the orb as it was.                                              |
+| `transitionDuration` | number                          | `400`                            | Length in milliseconds of grow, shrink, and resize animations. `0` snaps instantly.                        |
+| `ariaLabel`          | string                          | `"Bubble chart"`                 | The chart's accessible name.                                                                               |
+| `ariaDescription`    | string                          | none                             | A longer description for screen readers. Pass `""` to clear it.                                            |
+| `reducedMotion`      | `"auto" \| "always" \| "never"` | `"auto"`                         | `"auto"` follows the system setting, `"always"` keeps bubbles still, `"never"` keeps them moving.          |
+| `floatAmplitude`     | number                          | `2`                              | How far bubbles float up and down while idle, in pixels.                                                   |
+| `floatSpeed`         | number                          | `0.002`                          | How fast bubbles float (per millisecond).                                                                  |
+| `damping`            | number                          | `0.95`                           | How quickly bubbles slow down (closer to 1 glides longer). Read once when the chart is created.            |
+| `minVelocity`        | number                          | `0.01`                           | Below this speed, damping stops applying. Read once when the chart is created.                             |
+| `bounceCoefficient`  | number                          | `0.6`                            | How much speed a bubble keeps when it bounces off an edge (0 to 1). Read once when the chart is created.   |
+
+### Data format (`OrbDataInput`)
 
 ```typescript
 interface OrbDataInput {
-  id: string; // Unique identifier
-  label: string; // Display label
-  value: number; // Size value
-  color?: string; // Orb color (optional)
-  imageUrl?: string; // Image URL (optional)
-  metadata?: Record<string, any>; // Custom data (optional)
+  id: string; // unique, used to match bubbles between updates
+  label: string; // shown on the bubble, in the tooltip, and to screen readers (empty falls back to id for screen readers)
+  value: number; // a finite number of 0 or more; sets the bubble size
+  color?: string; // hex or rgb() color; otherwise taken from colorScheme
+  imageUrl?: string; // image drawn inside the bubble
+  metadata?: Record<string, unknown>; // your own data; metadata.category shows in the tooltip
 }
 ```
+
+### Skipped data (`OrbDataIssue`)
+
+```typescript
+interface OrbDataIssue {
+  index: number; // position of the skipped entry in the array you passed
+  id?: string; // the entry's id, when it had a string id
+  reason: "invalid-id" | "invalid-label" | "invalid-value" | "duplicate-id";
+}
+```
+
+New reasons may be added in a minor release, so keep a default branch in your handler.
+
+### Exports
+
+- `orbflow`: `OrbChart`, and the types `Orb`, `OrbChartConfig`, `OrbDataInput`, `OrbDataIssue`, `PhysicsConfig`.
+- `orbflow/react`: `OrbChart` (component), the same types, plus `OrbChartProps` and `OrbChartHandle`.
+- CDN script: `window.OrbFlow.OrbChart`.
+
+All exports are named; there is no default export.
+
+## Known limitations
+
+- The value drawn on a bubble always ends with `%`. The tooltip and screen reader text show the plain number. A `formatValue` option is planned (see [UPDATE.md](UPDATE.md)).
+- `theme: "auto"` treats `"transparent"`, named colors (like `"white"`), and `hsl()` as dark. On a light page behind a transparent chart, set `theme: "light"`.
+- Labels look best in a rounded font, but the chart cannot load fonts. Load one on your page and pass it as `fontFamily`.
+- The soap film and crescent are canvas approximations of the design and do not match it pixel for pixel. Browsers without `createConicGradient` skip the film.
+- Each bubble draws about ten gradients per frame. Very large charts may drop frames; a faster drawing cache is planned.
+
+## Browser support
+
+Current versions of Chrome, Edge, Firefox, and Safari (ES2020, Pointer Events, and `ResizeObserver`). Node 18 or newer for server rendering.
 
 ## Roadmap
 
@@ -109,6 +292,8 @@ Version 1.0 supports vanilla JavaScript and React. More frameworks arrive one pe
 - **1.1**: Vue
 - **1.2**: Svelte
 - **1.3**: Angular
+
+Bubble look and behavior improvements are tracked in [UPDATE.md](UPDATE.md).
 
 ## License
 

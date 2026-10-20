@@ -57,7 +57,10 @@ describe("<OrbChart> (React)", () => {
   });
 
   it("mounts exactly one canvas and draws the data", () => {
-    const { container } = render(<OrbChart data={data} />);
+    // No grow in, so the first frame already has full size bubbles.
+    const { container } = render(
+      <OrbChart data={data} transitionDuration={0} />,
+    );
 
     expect(container.querySelectorAll("canvas")).toHaveLength(1);
     expect(drawnText()).toEqual(expect.arrayContaining(["Alpha", "Beta"]));
@@ -74,9 +77,16 @@ describe("<OrbChart> (React)", () => {
   });
 
   it("draws the new data when the data prop changes", () => {
-    const { rerender } = render(<OrbChart data={data} />);
+    const { rerender } = render(
+      <OrbChart data={data} transitionDuration={0} />,
+    );
 
-    rerender(<OrbChart data={[{ id: "c", label: "Gamma", value: 10 }]} />);
+    rerender(
+      <OrbChart
+        data={[{ id: "c", label: "Gamma", value: 10 }]}
+        transitionDuration={0}
+      />,
+    );
     frames.step();
 
     expect(drawnText()).toContain("Gamma");

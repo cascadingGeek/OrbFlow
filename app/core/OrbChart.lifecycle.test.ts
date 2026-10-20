@@ -56,7 +56,8 @@ describe("OrbChart lifecycle", () => {
   const onChartParts = (target: EventTarget) =>
     target instanceof HTMLCanvasElement || target === container;
   const canvas = () => container.querySelector("canvas") as HTMLCanvasElement;
-  const tooltip = () => container.querySelector("div") as HTMLDivElement;
+  const tooltip = () =>
+    container.querySelector(":scope > div[aria-hidden]") as HTMLDivElement;
   const drawn = () => contexts.reduce((n, ctx) => n + ctx.calls.length, 0);
   const advance = (ms: number) => {
     clock += ms;
@@ -187,12 +188,12 @@ describe("OrbChart lifecycle", () => {
   describe("in place updates (AC-3, AC-4, AC-5, AC-12)", () => {
     it("keeps an orb's position and animates its size", () => {
       const chart = new OrbChart(container, { minRadius: 20, maxRadius: 80 });
-      chart.setData([row("a", 10), row("b", 100)]);
+      chart.setData([row("a", 1), row("b", 100)]);
       advance(400);
       const [a] = chart.getData();
       const spot = { x: a.x, y: a.y, vx: a.vx, vy: a.vy };
 
-      chart.setData([row("a", 100), row("b", 10)]);
+      chart.setData([row("a", 100), row("b", 1)]);
 
       expect(chart.getData()[0]).toBe(a);
       expect(a).toMatchObject({ radius: 20, ...spot });
@@ -247,7 +248,7 @@ describe("OrbChart lifecycle", () => {
     });
 
     it("revives an orb whose id returns while it shrinks", () => {
-      const chart = new OrbChart(container, { minRadius: 30 });
+      const chart = new OrbChart(container, { maxRadius: 30 });
       chart.setData([row("a", 1), row("b", 1)]);
       advance(400);
       const b = chart.getData()[1];
@@ -270,7 +271,7 @@ describe("OrbChart lifecycle", () => {
       chart.setData([row("a", 1)]);
       chart.setData([row("a", 1), row("b", 1)]);
 
-      expect(chart.getData()[1].radius).toBe(25);
+      expect(chart.getData()[1].radius).toBe(80);
     });
 
     it("updates label, value, and metadata in place, and keeps a missing color", () => {
@@ -322,7 +323,7 @@ describe("OrbChart lifecycle", () => {
       chart.pause();
       const before = drawn();
 
-      chart.setData([row("b", 9), row("c", 2)]);
+      chart.setData([row("b", 9), row("c", 0)]);
 
       expect(frames.pending()).toBe(0);
       expect(drawn()).toBeGreaterThan(before);
@@ -378,7 +379,7 @@ describe("OrbChart lifecycle", () => {
   describe("updateConfig (AC-8, AC-11)", () => {
     it("keeps defaults when a key is undefined", () => {
       const chart = new OrbChart(container, { minRadius: 30 });
-      chart.setData([row("a", 1)]);
+      chart.setData([row("a", 1), row("z", 100)]);
 
       chart.updateConfig({
         minRadius: undefined,

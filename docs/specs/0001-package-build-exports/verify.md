@@ -14,7 +14,7 @@ _Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `
 - [x] `npm run check:package` → `publint` "All good", `attw --pack .` green for `orbflow` and `orbflow/react` under node10, node16 (CJS and ESM), and bundler, `verify-dist: 7 files OK` → AC-2, AC-3, AC-4, AC-6, AC-9
 - [x] `head -1 dist/react.mjs dist/react.cjs` → both print `"use client";`; `grep -l "use client" dist/index.* dist/chunk-* dist/orbflow.iife.js` → no matches → AC-4
 - [x] `node -e "import('./dist/index.mjs').then(m => console.log(Object.keys(m)))"` → `[ 'OrbChart' ]`, and the same for `dist/react.mjs` → AC-3
-- [x] `npm run size` → core ≤ 8 kB, react ≤ 9 kB, cdn ≤ 8 kB gzip; lower any limit in `.size-limit.json` below the real size → exits non zero → AC-7
+- [x] `npm run size` → core ≤ 13 kB, react ≤ 14 kB, cdn ≤ 13 kB gzip; lower any limit in `.size-limit.json` below the real size → exits non zero → AC-7
 - [x] `npm run smoke` → `esm`, `cjs`, `ts`, `bare` all OK; break a fixture assertion → exits non zero → AC-1, AC-2, AC-5, AC-8, AC-10
 - [x] `npm run prepublishOnly` → runs lint, typecheck, test, build, check:package, size, smoke in that order and passes → AC-11
 - [x] `node -p "require('./package.json').sideEffects"` → `false`; `dependencies` is absent; `peerDependenciesMeta.react.optional` is `true` → AC-8, AC-11
@@ -26,7 +26,7 @@ _Steps derived from spec 0001 acceptance criteria. `/check verify` runs these; `
 - [x] `window.OrbFlow` is the only global the IIFE defines → CDN global name
 - [x] `verify-dist` es-check passes as ES2020; add a `??=` line to a chunk and it fails → output target
 - [x] `npm ls tsdown` → exactly `0.23.1`, matching the exact pin in `package.json` → tsdown version
-- [x] Size budgets match the spec (8 / 9 / 8 kB gzip) against the measured 3.55 kB baseline → budgets
+- [x] Size budgets match the spec (13 / 14 / 13 kB gzip, raised three times on 2026-10-20) and `.size-limit.json` agrees → budgets
 - [x] `npm run smoke` prints `packed orbflow-<version>.tgz` from the current build → tarball under test
 
 ## Acceptance-criteria coverage

@@ -6,6 +6,7 @@ import { reportIssues } from "./reportIssues";
 import { ConfigResolver, type ResolvedConfig } from "./ConfigResolver";
 import { DataValidator } from "./DataValidator";
 import { OrbReconciler } from "./OrbReconciler";
+import { PopController } from "./PopController";
 import { RadiusTweener } from "./RadiusTweener";
 import { MotionPreference } from "./MotionPreference";
 import { Settler } from "./Settler";
@@ -23,6 +24,7 @@ export class OrbChart {
   private view!: ChartView;
   private motion!: MotionPreference;
   private redrawer!: Redrawer;
+  private pops!: PopController;
   private loop: AnimationLoop;
   private playback: Playback;
   private tweener: RadiusTweener;
@@ -61,13 +63,15 @@ export class OrbChart {
 
   private mount() {
     this.view = new ChartView(this.container, () => this.config, {
-      onCanvasClick: (x, y) => {
+      onCanvasMiss: (x, y) => {
         if (this.playback.reduced) return;
         this.physicsEngine.applyMouseRepulsion(this.orbs, x, y, 150);
       },
+      onActivate: (orb, event) => this.pops.activate(orb, event),
       onImageLoaded: () => {
         if (this.playback.idle) this.redrawer.run(false);
       },
+      now: () => this.loop.now(),
       elapsed: () => this.loop.now() - this.startTime,
       phaseOf: (orb) => this.reconciler.phaseOf(orb),
       onResize: () => this.handleResize(),
@@ -95,6 +99,31 @@ export class OrbChart {
       this.redrawer.flipped(reduced),
     );
     this.teardown.add(() => this.motion.dispose());
+    this.pops = new PopController({
+      live: (id) => this.getData().find((orb) => orb.id === id) ?? null,
+      snapshotOf: (orb) =>
+        this.view.snapshotOf(orb, !this.reconciler.awaiting(orb.id)),
+      remove: (orb) => {
+        this.orbs = this.orbs.filter((other) => other !== orb);
+        this.reconciler.drop(orb.id);
+        this.view.syncInput(this.getData());
+        this.view.syncList(this.getData());
+      },
+      burst: (snapshot, idle) =>
+        this.view.burst(snapshot, this.loop.now(), idle),
+      announce: (text) => this.view.announce(text),
+      push: (x, y, reach, strength) =>
+        this.physicsEngine.applyMouseRepulsion(
+          this.orbs,
+          x,
+          y,
+          reach,
+          strength,
+        ),
+      idle: () => this.playback.idle,
+      redraw: () => this.redrawer.run(false),
+      config: () => this.config,
+    });
     this.redrawer.apply(this.motion.reduced);
     this.handleResize();
   }
@@ -109,6 +138,8 @@ export class OrbChart {
 
     const { accepted, issues, notArray } = this.validator.validate(data);
     if (notArray) console.warn("OrbFlow: setData expects an array, got none.");
+    // Data is the truth: ghosts go, and a popped id in it grows back in.
+    this.view.clearGhosts();
 
     // A paused or still chart jumps to the new data and draws one frame.
     const now = this.loop.now();
@@ -151,7 +182,8 @@ export class OrbChart {
   }
 
   private draw(now: number) {
-    this.view.render(this.orbs, now - this.startTime);
+    const elapsed = now - this.startTime;
+    this.view.render(this.orbs, { now, elapsed, moving: !this.playback.idle });
   }
 
   private frame(now: number) {
@@ -167,10 +199,21 @@ export class OrbChart {
     this.redrawer.begin();
   }
 
-  /** Pause animation. */
+  /** Pause animation. Bursts in flight jump to their end. */
   pause() {
     if (this.destroyed) return;
     this.playback.pause();
+    if (this.view.finishBursts(this.loop.now())) this.redrawer.run(false);
+  }
+
+  /**
+   * Pops the live bubble `id`: it bursts into droplets (or, on a paused or
+   * still chart, disappears at once), `onOrbPop` runs, and screen readers
+   * hear it. Returns false for an unknown id, a bubble already popped or
+   * shrinking out, or after `destroy()`.
+   */
+  pop(id: string): boolean {
+    return !this.destroyed && this.pops.pop(id);
   }
 
   /** Destroy chart instance. Safe to call more than once. */

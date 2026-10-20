@@ -21,7 +21,8 @@ describe("CanvasInput", () => {
   let container: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let config: InputConfig;
-  let onCanvasClick: jest.Mock;
+  let onCanvasMiss: jest.Mock;
+  let onActivate: jest.Mock;
   let listeners: ReturnType<typeof trackListeners>;
 
   beforeEach(() => {
@@ -35,10 +36,10 @@ describe("CanvasInput", () => {
       enableTooltip: true,
       width: 400,
       height: 300,
-      onOrbClick: jest.fn(),
       onOrbHover: jest.fn(),
     };
-    onCanvasClick = jest.fn();
+    onCanvasMiss = jest.fn();
+    onActivate = jest.fn();
   });
 
   afterEach(() => {
@@ -52,7 +53,7 @@ describe("CanvasInput", () => {
       canvas,
       new TooltipView(container, () => config),
       () => config,
-      onCanvasClick,
+      { onActivate, onCanvasMiss },
     );
     input.sync(orbs);
     return input;
@@ -66,7 +67,7 @@ describe("CanvasInput", () => {
 
     dispatchMouse(canvas, "click", 105, 100);
 
-    expect(config.onOrbClick).toHaveBeenCalledWith(above, expect.anything());
+    expect(onActivate).toHaveBeenCalledWith(above, expect.anything());
   });
 
   it("cannot hit an orb that has not grown yet", () => {
@@ -74,7 +75,7 @@ describe("CanvasInput", () => {
 
     dispatchMouse(canvas, "click", 100, 100);
 
-    expect(config.onOrbClick).not.toHaveBeenCalled();
+    expect(onActivate).not.toHaveBeenCalled();
   });
 
   it("still forwards every click to the repulsion handler", () => {
@@ -82,7 +83,7 @@ describe("CanvasInput", () => {
 
     dispatchMouse(canvas, "click", 10, 20);
 
-    expect(onCanvasClick).toHaveBeenCalledWith(10, 20);
+    expect(onCanvasMiss).toHaveBeenCalledWith(10, 20);
   });
 
   it("reads touch from pointerdown when the click carries no pointer type", () => {
@@ -137,7 +138,7 @@ describe("CanvasInput", () => {
     make([makeOrb("a", 100, 100)]);
 
     expect(() => tap(canvas, 100, 100)).not.toThrow();
-    expect(config.onOrbClick).toHaveBeenCalledTimes(1);
+    expect(onActivate).toHaveBeenCalledTimes(1);
   });
 
   it("removes every listener, the timer, and the tooltip on dispose", () => {
@@ -158,8 +159,8 @@ describe("CanvasInput", () => {
 
     dispatchMouse(canvas, "click", 100, 100);
 
-    expect(config.onOrbClick).not.toHaveBeenCalled();
-    expect(onCanvasClick).not.toHaveBeenCalled();
+    expect(onActivate).not.toHaveBeenCalled();
+    expect(onCanvasMiss).not.toHaveBeenCalled();
   });
 
   it("clears the hover without a second null when the orb is already gone", () => {

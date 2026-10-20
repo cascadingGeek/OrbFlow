@@ -27,6 +27,17 @@ export class OrbReconciler {
     return this.seeds.get(orb.id) ?? 0;
   }
 
+  /** True while the orb waits for a container with a size to be placed. */
+  awaiting(id: string): boolean {
+    return this.pending.has(id);
+  }
+
+  /** Forgets an orb that was popped: its seed, place, and tween. */
+  drop(id: string) {
+    this.forget(id);
+    this.tweener.cancel(id);
+  }
+
   /** Drops what is kept for an orb that has been removed. */
   forget(id: string) {
     this.seeds.delete(id);
@@ -101,17 +112,18 @@ export class OrbReconciler {
     this.pending.clear();
   }
 
+  // Area follows the value: the largest value gets maxRadius, and minRadius
+  // is a floor so tiny values stay visible.
   private radiusScale(
     items: { value: number }[],
     config: ResolvedConfig,
   ): (value: number) => number {
-    const values = items.map((item) => item.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
+    const largest = items.reduce((max, item) => Math.max(max, item.value), 0);
+    const floor = Math.min(config.minRadius, config.maxRadius);
     return (value) =>
-      config.minRadius +
-      ((value - min) / (max - min || 1)) *
-        (config.maxRadius - config.minRadius);
+      largest > 0
+        ? Math.max(floor, config.maxRadius * Math.sqrt(value / largest))
+        : floor;
   }
 
   private create(

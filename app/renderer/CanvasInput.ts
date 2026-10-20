@@ -6,12 +6,21 @@ const TOUCH_TOOLTIP_MS = 2500;
 /** The pieces of config the input layer reads, looked up on every event. */
 export type InputConfig = Pick<
   OrbChartConfig,
-  "enableTooltip" | "onOrbClick" | "onOrbHover" | "width" | "height"
+  "enableTooltip" | "onOrbHover" | "width" | "height"
 >;
 
+/** What the input layer tells its owner. */
+export interface InputHooks {
+  /** A click or tap landed on `orb`. */
+  onActivate(orb: Orb, event: MouseEvent): void;
+  /** A click or tap missed every orb, in canvas pixels. */
+  onCanvasMiss(x: number, y: number): void;
+}
+
 /**
- * Owns every canvas listener. It hit tests, drives the shared tooltip for the
- * pointer, runs the touch tooltip timer, and removes everything in `dispose()`.
+ * Owns every canvas listener. It hit tests, sets the cursor, drives the shared
+ * tooltip for the pointer, runs the touch tooltip timer, and removes
+ * everything in `dispose()`.
  */
 export class CanvasInput {
   private liveOrbs: Orb[] = [];
@@ -31,7 +40,7 @@ export class CanvasInput {
     private readonly canvas: HTMLCanvasElement,
     private readonly tooltip: TooltipView,
     private readonly getConfig: () => InputConfig,
-    private readonly onCanvasClick: (x: number, y: number) => void,
+    private readonly hooks: InputHooks,
   ) {
     for (const [type, listener] of this.listeners) {
       canvas.addEventListener(type, listener);
@@ -65,6 +74,7 @@ export class CanvasInput {
     this.clearTimer();
     this.tooltip.dispose();
     this.hoveredOrb = null;
+    this.canvas.style.cursor = "default";
   }
 
   private onPointerDown(event: PointerEvent) {
@@ -91,26 +101,29 @@ export class CanvasInput {
     this.clearHover();
   }
 
+  // Hit test first: a hit activates the orb and never scatters its
+  // neighbors; only a miss pushes them away.
   private onClick(event: MouseEvent) {
     const { offsetX: x, offsetY: y } = event;
     const pointerType =
       (event as PointerEvent).pointerType || this.lastPointerType;
-    this.onCanvasClick(x, y);
-
     const orb = this.hit(x, y);
-    if (pointerType === "touch") {
-      if (!orb) {
-        this.clearHover();
-        return;
-      }
-      this.setHover(orb);
-      this.tooltip.show(orb, x, y, true, "pointer");
-      this.restartTimer();
+    if (!orb) {
+      if (pointerType === "touch") this.clearHover();
+      this.hooks.onCanvasMiss(x, y);
+      return;
     }
-    if (orb) this.getConfig().onOrbClick?.(orb, event);
+    this.hooks.onActivate(orb, event);
+    // Activating may have popped the orb; only a live one gets a tooltip.
+    if (pointerType !== "touch" || !this.liveOrbs.includes(orb)) return;
+    this.setHover(orb, false);
+    this.tooltip.show(orb, x, y, true, "pointer");
+    this.restartTimer();
   }
 
-  private setHover(orb: Orb | null) {
+  // Touch never changes the cursor.
+  private setHover(orb: Orb | null, cursor = true) {
+    if (cursor) this.canvas.style.cursor = orb ? "pointer" : "default";
     if (orb === this.hoveredOrb) return;
     this.hoveredOrb = orb;
     this.getConfig().onOrbHover?.(orb);

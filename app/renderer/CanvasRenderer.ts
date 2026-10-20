@@ -1,28 +1,53 @@
-import { Orb, OrbChartConfig } from "../types/types";
+import type { Orb, OrbChartConfig } from "../types/types";
+import { BubblePainter, type Look } from "./BubblePainter";
+import { BurstEffects } from "./BurstEffects";
+import { ImageCache } from "./ImageCache";
+import { resolveTheme } from "./color";
+
+/** The parts a renderer draws with. Each one is optional for tests. */
+export interface RendererParts {
+  images?: ImageCache;
+  painter?: BubblePainter;
+  effects?: BurstEffects;
+}
+
+/** The clock readings for one frame. */
+export interface FrameTime {
+  /** Loop clock time, for bursts and ghosts. */
+  now: number;
+  /** Milliseconds since the chart started, for the float and the film. */
+  elapsed: number;
+  /** False while paused or still: the film holds at its start angle. */
+  moving: boolean;
+}
+
+const FILM_START = (200 * Math.PI) / 180;
+const FILM_TURN_MS = 14000;
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  // Only images that finished loading; drawImage throws on a broken image.
-  private imageCache: Map<string, HTMLImageElement> = new Map();
-  // Every URL ever requested, so a slow or broken one is fetched only once.
-  private requestedImages: Set<string> = new Set();
-  // Images still loading, so destroy() can silence their callbacks.
-  private pendingImages: Set<HTMLImageElement> = new Set();
-  private config: OrbChartConfig;
+  private config!: OrbChartConfig;
+  private theme: Look["theme"] = "dark";
+  private readonly images: ImageCache;
+  private readonly painter: BubblePainter;
+  private readonly effects: BurstEffects;
   private width: number = 0;
   private height: number = 0;
   // Still mode draws no float wobble; the focus ring follows the same offset.
   private still = false;
   private focusedId: string | null = null;
 
-  /** `onImageLoaded` lets an idle chart draw once when an image arrives. */
+  /** The parts are owned by the caller, which disposes them. */
   constructor(
     container: HTMLElement,
     config: OrbChartConfig,
-    private readonly onImageLoaded: () => void = () => {},
+    parts: RendererParts = {},
   ) {
-    this.config = config;
+    this.painter = parts.painter ?? new BubblePainter();
+    this.images = parts.images ?? new ImageCache();
+    this.effects = parts.effects ?? new BurstEffects(this.painter);
+    this.updateConfig(config);
 
     // Check the context before the canvas touches the container, so a
     // failure leaves nothing behind.
@@ -35,7 +60,7 @@ export class CanvasRenderer {
     // The accessible list carries the same facts, so hide the canvas.
     this.canvas.setAttribute("aria-hidden", "true");
     this.canvas.style.display = "block";
-    this.canvas.style.cursor = "pointer";
+    this.canvas.style.cursor = "default";
     container.appendChild(this.canvas);
   }
 
@@ -44,8 +69,10 @@ export class CanvasRenderer {
     return this.canvas;
   }
 
+  /** Applies new options; the theme is resolved here, not every frame. */
   updateConfig(config: OrbChartConfig) {
     this.config = config;
+    this.theme = resolveTheme(config.theme, config.backgroundColor);
   }
 
   /** Turns the float wobble off (true) or back on. */
@@ -83,26 +110,51 @@ export class CanvasRenderer {
     this.ctx.scale(dpr, dpr);
   }
 
+  /** Draws background, ghosts, bubbles, bursts, then the focus ring. */
   render(
     orbs: Orb[],
-    elapsedTime: number = 0,
+    time: FrameTime = { now: 0, elapsed: 0, moving: false },
     phaseOf: (orb: Orb) => number = () => 0,
   ) {
-    // Clear canvas
-    this.ctx.fillStyle = this.config.backgroundColor || "#0a0e1a";
-    this.ctx.fillRect(0, 0, this.width, this.height);
+    const { ctx } = this;
+    ctx.clearRect(0, 0, this.width, this.height);
+    ctx.fillStyle = this.config.backgroundColor || "#0a0e1a";
+    ctx.fillRect(0, 0, this.width, this.height);
 
-    // Draw orbs with float effect
-    orbs.forEach((orb) => {
-      this.drawBubble(orb, 0, this.floatOffset(elapsedTime, phaseOf(orb)));
-    });
+    const turning = time.moving && !this.still;
+    const look: Look = {
+      theme: this.theme,
+      fontFamily: this.config.fontFamily || "Inter, system-ui, sans-serif",
+      filmAngle:
+        FILM_START +
+        (turning ? (time.elapsed * 2 * Math.PI) / FILM_TURN_MS : 0),
+    };
+    this.effects.drawGhosts(ctx, time.now, look);
+    for (const orb of orbs) {
+      this.painter.paint(ctx, this.bubbleOf(orb, time.elapsed, phaseOf), look);
+    }
+    this.effects.drawBursts(ctx, time.now, look);
 
-    // The ring goes last, so it sits on top of every orb.
+    // The ring goes last, so it sits on top of everything.
     const focused = orbs.find((orb) => orb.id === this.focusedId);
     if (focused) {
-      const { x, y } = this.centerOf(focused, elapsedTime, phaseOf(focused));
+      const { x, y } = this.centerOf(focused, time.elapsed, phaseOf(focused));
       this.drawFocusRing(x, y, focused.radius);
     }
+  }
+
+  /** What `orb` looks like right now, for drawing or for a pop snapshot. */
+  bubbleOf(orb: Orb, elapsed: number, phaseOf: (orb: Orb) => number) {
+    const { x, y } = this.centerOf(orb, elapsed, phaseOf(orb));
+    return {
+      x,
+      y,
+      r: orb.radius,
+      color: orb.color,
+      label: orb.label,
+      value: orb.value,
+      image: this.images.get(orb.imageUrl),
+    };
   }
 
   // Two tones, so the ring shows on any background.
@@ -119,146 +171,8 @@ export class CanvasRenderer {
     }
   }
 
-  private drawBubble(orb: Orb, floatX: number, floatY: number) {
-    const x = orb.x + floatX;
-    const y = orb.y + floatY;
-    const r = orb.radius;
-
-    // 1. Base Bubble Fill (semi-transparent)
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, r, 0, Math.PI * 2);
-
-    const fillGradient = this.ctx.createRadialGradient(
-      x - r * 0.3,
-      y - r * 0.3,
-      r * 0.1,
-      x,
-      y,
-      r,
-    );
-
-    fillGradient.addColorStop(0, this.hexToRgba(orb.color || "#3b82f6", 0.4));
-    fillGradient.addColorStop(1, this.hexToRgba(orb.color || "#3b82f6", 0.1));
-
-    this.ctx.fillStyle = fillGradient;
-    this.ctx.fill();
-
-    // 2. Inner Rim/Glow
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, r * 0.9, 0, Math.PI * 2);
-    this.ctx.strokeStyle = this.hexToRgba(orb.color || "#3b82f6", 0.3);
-    this.ctx.lineWidth = 1;
-    this.ctx.stroke();
-
-    // 3. Specular Highlight (The "shiny" part)
-    this.ctx.beginPath();
-    this.ctx.ellipse(
-      x - r * 0.3,
-      y - r * 0.4,
-      r * 0.3,
-      r * 0.15,
-      -Math.PI / 4,
-      0,
-      Math.PI * 2,
-    );
-    this.ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-    this.ctx.fill();
-
-    // 4. Bottom Reflection
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, r * 0.85, 0.2 * Math.PI, 0.8 * Math.PI);
-    this.ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
-
-    // 5. Draw image if available
-    const img = orb.imageUrl ? this.imageCache.get(orb.imageUrl) : undefined;
-    if (img) {
-      const imgSize = r * 0.8;
-
-      this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, imgSize / 2, 0, Math.PI * 2);
-      this.ctx.clip();
-      this.ctx.globalAlpha = 0.9;
-      this.ctx.drawImage(
-        img,
-        x - imgSize / 2,
-        y - imgSize / 2,
-        imgSize,
-        imgSize,
-      );
-      this.ctx.restore();
-    } else if (orb.imageUrl) {
-      this.loadImage(orb.imageUrl);
-    }
-
-    // 6. Draw label
-    this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-    this.ctx.font = `bold ${Math.max(11, r / 4)}px Inter, sans-serif`;
-    this.ctx.textAlign = "center";
-    this.ctx.textBaseline = "middle";
-
-    const labelY = orb.imageUrl ? y + r * 0.5 : y;
-    this.ctx.fillText(orb.label, x, labelY);
-
-    // Value below label
-    this.ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    this.ctx.font = `${Math.max(10, r / 5)}px Inter, sans-serif`;
-    this.ctx.fillText(orb.value + "%", x, labelY + r * 0.25);
-  }
-
-  private hexToRgba(hex: string, alpha: number): string {
-    let r = 0,
-      g = 0,
-      b = 0;
-    if (hex.length === 4) {
-      r = parseInt(hex[1] + hex[1], 16);
-      g = parseInt(hex[2] + hex[2], 16);
-      b = parseInt(hex[3] + hex[3], 16);
-    } else if (hex.length === 7) {
-      r = parseInt(hex.substring(1, 3), 16);
-      g = parseInt(hex.substring(3, 5), 16);
-      b = parseInt(hex.substring(5, 7), 16);
-    }
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-
-  preloadImages(orbs: Orb[]) {
-    orbs.forEach((orb) => {
-      if (orb.imageUrl) {
-        this.loadImage(orb.imageUrl);
-      }
-    });
-  }
-
-  private loadImage(url: string) {
-    if (this.requestedImages.has(url)) return;
-    this.requestedImages.add(url);
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    this.pendingImages.add(img);
-    img.onload = () => {
-      this.pendingImages.delete(img);
-      this.imageCache.set(url, img);
-      this.onImageLoaded();
-    };
-    img.onerror = () => {
-      this.pendingImages.delete(img);
-      console.warn(`Failed to load: ${url}`);
-    };
-    img.src = url;
-  }
-
+  /** Removes the canvas. */
   destroy() {
-    for (const img of this.pendingImages) {
-      img.onload = null;
-      img.onerror = null;
-    }
-    this.pendingImages.clear();
     this.canvas.remove();
-    this.imageCache.clear();
-    this.requestedImages.clear();
   }
 }

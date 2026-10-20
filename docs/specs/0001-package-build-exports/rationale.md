@@ -57,3 +57,16 @@ The real risk for a v1 launch is an install that silently breaks for some consum
 I had recommended keeping Rollup, because it's the more proven choice. tsdown is a reasonable pick with one tradeoff you should accept on purpose: it's young. That risk is contained in three ways. The version is pinned exactly, not with a caret. Every build is checked from the outside (publint and attw inspect the published shape, size-limit measures the real output, and the smoke fixtures install the real tarball), so a bad tsdown upgrade fails the check instead of reaching npm. And because Rolldown follows Rollup's output model, falling back to Rollup later is a config rewrite, not a code change.
 
 The other decisions follow from the adoption goal. Shipping ESM and CommonJS avoids failing in test runners and older setups that still `require()`. The CDN global build serves vanilla users who try things in CodePen or a plain HTML file. A named only, minimal API (no `PhysicsEngine`, no default export) keeps the 1.0 promise small and avoids the `require('orbflow').default` trap. Fixed `.mjs`/`.cjs` extensions make every file's format obvious regardless of the consumer's setup.
+
+## Revision: raising the size budgets (2026-10-20)
+
+**Context**: AC-7 set the budgets at 8 kB (core), 9 kB (react), and 8 kB (cdn), grounded in a 3.55 kB baseline, with a follow up saying features 4, 6, and 7 should stay inside them or revisit them on purpose. Feature 6 (spec 0004, accessibility and reduced motion) landed at core 8.69 kB, react 9.23 kB, and cdn 8.75 kB, all over.
+
+**Options considered**:
+1. Raise the budgets to 9, 10, and 9 kB. Keeps every feature and the small classes that hold `OrbChart.ts` under its line cap.
+2. Trim about 0.8 kB gzip by removing structure and shortening code. Keeps 8, 9, and 8 kB, but risks pushing `OrbChart.ts` back over its cap and making the code harder to read.
+3. Leave the check failing and decide later. Keeps the numbers honest but leaves `npm run size` red and `prepublishOnly` blocked.
+
+**Decision**: option 1, chosen by the engineer. The size still sits far below what most chart libraries ship, the extra weight buys real accessibility, and the review habit the follow up asked for (raise it in this spec, never quietly) is what this section is.
+
+**Tradeoff**: the room left is small (about 0.3 kB in core), so feature 7 will meet the same question again unless it measures first and stays inside.

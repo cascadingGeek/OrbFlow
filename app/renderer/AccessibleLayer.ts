@@ -12,8 +12,7 @@ import {
 /** The pieces of config the layer reads, looked up on every event. */
 export type LayerConfig = Required<
   Pick<OrbChartConfig, "ariaLabel" | "ariaDescription">
-> &
-  Pick<OrbChartConfig, "onOrbClick">;
+>;
 
 /** What the layer tells its owner. */
 export interface LayerHooks {
@@ -21,6 +20,8 @@ export interface LayerHooks {
   onFocus(orb: Orb | null): void;
   /** Escape was pressed. Return true if it hid something. */
   onEscape(): boolean;
+  /** An orb's button was clicked, or pressed with Enter or Space. */
+  onActivate(orb: Orb, event: MouseEvent): void;
 }
 
 interface Entry {
@@ -204,8 +205,7 @@ export class AccessibleLayer {
   }
 
   private onClick(event: MouseEvent) {
-    const id = this.buttonId(event.target);
-    const entry = id ? this.entries.get(id) : undefined;
-    if (entry) this.getConfig().onOrbClick?.(entry.orb, event);
+    const entry = this.entries.get(this.buttonId(event.target) ?? "");
+    if (entry) this.hooks.onActivate(entry.orb, event);
   }
 }

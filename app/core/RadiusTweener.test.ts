@@ -75,4 +75,20 @@ describe("RadiusTweener", () => {
     expect(tweener.step([orb], 50)).toEqual([orb]);
     expect(orb.radius).toBe(shrunk);
   });
+
+  it("cancels a tween where it is, without calling onExited", () => {
+    const onExited = jest.fn();
+    const tweener = new RadiusTweener(onExited);
+    const orb = makeOrb("a", 40);
+    tweener.start(orb, 0, 0, 100, "exit");
+    tweener.step([orb], 50);
+    const at = orb.radius;
+
+    tweener.cancel("a");
+
+    expect(tweener.isExiting(orb)).toBe(false);
+    expect(tweener.step([orb], 500)).toEqual([orb]);
+    expect(orb.radius).toBe(at);
+    expect(onExited).not.toHaveBeenCalled();
+  });
 });

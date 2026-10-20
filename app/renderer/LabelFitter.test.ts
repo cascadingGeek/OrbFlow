@@ -74,18 +74,69 @@ describe("LabelFitter (AC-4)", () => {
     );
   });
 
-  it("measures each text once per font, and again after the font changes", () => {
+  it("measures nothing new for a size it has seen, until the font changes", () => {
     const fitter = new LabelFitter();
-    const measures = () => fake.font;
     const spy = jest.spyOn(
       fake as unknown as { measureText: () => unknown },
       "measureText",
     );
     fitter.fit(ctx, font, 60, "A", "5%", false);
-    fitter.fit(ctx, font, 70, "A", "5%", false);
-    expect(spy).toHaveBeenCalledTimes(2);
+    const first = spy.mock.calls.length;
+
+    fitter.fit(ctx, font, 60, "A", "5%", false);
+    expect(spy).toHaveBeenCalledTimes(first);
+
     fitter.fit(ctx, "Nunito", 60, "A", "5%", false);
-    expect(spy).toHaveBeenCalledTimes(4);
-    expect(measures()).toContain("Nunito");
+    expect(spy.mock.calls.length).toBeGreaterThan(first);
+    expect(fake.font).toContain("Nunito");
+  });
+
+  describe("with a font that is wider per em at small sizes, like macOS system-ui", () => {
+    // Fitted to Chrome's real "Bitcoin Cash" widths with SF Pro (bold):
+    // 571.7 px at 100 px, about 587 per 100 at 32 px, 643.9 per 100 at 10 px.
+    const perEm = (size: number) => 5.637 + 8.02 / size;
+    const sfWidth = (text: string, size: number) =>
+      (text.length / 12) * size * perEm(size);
+
+    beforeEach(() => {
+      fake.measureText = (text: string) => {
+        const size = Number(/(\d+(?:\.\d+)?)px/.exec(fake.font)?.[1]);
+        return { width: sfWidth(text, size) };
+      };
+    });
+
+    it.each([80, 60, 50])(
+      "fits a long label to exactly 1.5r at radius %i, never wider",
+      (r) => {
+        const fit = defined(
+          new LabelFitter().fit(ctx, font, r, "Bitcoin Cash", null, false),
+        );
+        const drawn = sfWidth("Bitcoin Cash", fit.labelSize);
+        expect(drawn).toBeLessThanOrEqual(1.5 * r);
+        expect(drawn).toBeGreaterThan(1.5 * r * 0.995);
+      },
+    );
+
+    it("hides a label that only reaches 1.5r below 10 px", () => {
+      // 64.4 px wide at 10 px, so it cannot fit 60 px at a readable size.
+      expect(
+        new LabelFitter().fit(ctx, font, 40, "Bitcoin Cash", null, false),
+      ).toBeNull();
+    });
+
+    it("fits the value line under its own 1.5r cap too", () => {
+      const fit = defined(
+        new LabelFitter().fit(ctx, font, 60, "A", "123456.78%", false),
+      );
+      expect(fit.valueSize).toBeGreaterThan(0);
+      expect(sfWidth("123456.78%", fit.valueSize)).toBeLessThanOrEqual(90);
+    });
+
+    it("keeps a short label at 0.4r when that already fits", () => {
+      const fit = defined(
+        new LabelFitter().fit(ctx, font, 60, "A", null, false),
+      );
+      expect(fit.labelSize).toBe(24);
+    });
   });
 });

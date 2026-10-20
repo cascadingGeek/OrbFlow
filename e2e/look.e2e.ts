@@ -42,13 +42,8 @@ test.describe("labels fit with real font metrics (AC-4)", () => {
     await page.evaluate(() => window.chart.pause());
   });
 
-  // Known bug, kept as an expected failure until fixed: LabelFitter measures
-  // each text once at 100 px and scales linearly (spec 0005 AC-4), but the
-  // macOS system font is wider per em at small sizes ("Bitcoin Cash" is 571.7
-  // px at 100 px, 587 per 100 at 32 px), so a fitted label overshoots 1.5r by
-  // a few percent. Remove test.fail() once the fitter measures at draw size.
+  // Real font metrics: the macOS system font is wider per em when small.
   test("never draws text wider than 1.5 times the radius", async ({ page }) => {
-    test.fail();
     const { text } = await redraw(page);
     const radii = await page.evaluate(() =>
       Object.fromEntries(window.chart.getData().map((o) => [o.id, o.radius])),

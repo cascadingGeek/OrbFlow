@@ -15,8 +15,11 @@ const MIN_SIZE = 10;
 const PROBE = 100;
 
 /**
- * Picks label and value sizes that fit inside a bubble. Each text is measured
- * once at 100 px per font, then scaled, because width grows linearly with size.
+ * Picks label and value sizes that fit inside a bubble. A 100 px measure gives
+ * the first estimate. Width is not quite linear in size (fonts with optical
+ * sizes, like the macOS system font, are wider per em when small), so the
+ * estimate is checked with a measure near the chosen size. Every measure is
+ * cached per font, so a settled chart measures nothing per frame.
  */
 export class LabelFitter {
   private readonly widths = new Map<string, number>();
@@ -67,15 +70,32 @@ export class LabelFitter {
     max: number,
     cap: number,
   ): number {
-    const width = this.measure(ctx, weight, text);
-    return width > 0 ? Math.min(max, (PROBE * cap) / width) : max;
+    let size = max;
+    let probe = PROBE;
+    for (let pass = 0; pass < 3; pass++) {
+      const width = this.measure(ctx, weight, text, probe);
+      if (width <= 0) return size;
+      // Where `text` would be `cap` wide, at the probe's width per em.
+      const fits = (probe * cap) / width;
+      if (pass > 0 && size <= fits) return size;
+      size = Math.min(size, fits);
+      // Check near the chosen size, rounded down to a half pixel: a smaller
+      // probe is wider per em, so the check never lets the text overshoot.
+      probe = Math.max(1, Math.floor(size * 2) / 2);
+    }
+    return size;
   }
 
-  private measure(ctx: CanvasRenderingContext2D, weight: string, text: string) {
-    const key = `${weight}|${text}`;
+  private measure(
+    ctx: CanvasRenderingContext2D,
+    weight: string,
+    text: string,
+    px: number,
+  ) {
+    const key = `${weight}|${px}|${text}`;
     let width = this.widths.get(key);
     if (width === undefined) {
-      ctx.font = `${weight} ${PROBE}px ${this.family}`;
+      ctx.font = `${weight} ${px}px ${this.family}`;
       width = ctx.measureText(text).width;
       this.widths.set(key, width);
     }

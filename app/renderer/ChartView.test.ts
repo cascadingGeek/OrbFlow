@@ -29,8 +29,10 @@ describe("ChartView", () => {
     setElementSize(container, 400, 300);
     document.body.appendChild(container);
     host = {
-      onCanvasClick: jest.fn(),
+      onCanvasMiss: jest.fn(),
+      onActivate: jest.fn(),
       onImageLoaded: jest.fn(),
+      now: jest.fn(() => 0),
       elapsed: jest.fn(() => 0),
       phaseOf: jest.fn<number, [Orb]>(() => 0),
       redrawIfStopped: jest.fn(),
@@ -43,13 +45,17 @@ describe("ChartView", () => {
     jest.restoreAllMocks();
   });
 
-  it("builds the canvas, tooltip, and list in order", () => {
+  it("builds the canvas, tooltip, list, and live region in order", () => {
     new ChartView(container, config, host);
     expect([...container.children].map((el) => el.tagName)).toEqual([
       "CANVAS",
       "DIV",
       "UL",
+      "DIV",
     ]);
+    expect(container.lastElementChild?.getAttribute("aria-live")).toBe(
+      "polite",
+    );
   });
 
   it("tells the host when the container resizes", () => {
@@ -91,11 +97,13 @@ describe("ChartView", () => {
     const view = new ChartView(container, config, host);
     view.setStill(true);
     expect(
-      (container.querySelector("div") as HTMLElement).style.transition,
+      (container.querySelector(":scope > div[aria-hidden]") as HTMLElement)
+        .style.transition,
     ).toBe("none");
     view.setStill(false);
     expect(
-      (container.querySelector("div") as HTMLElement).style.transition,
+      (container.querySelector(":scope > div[aria-hidden]") as HTMLElement)
+        .style.transition,
     ).toBe("opacity 0.2s");
   });
 });

@@ -2,8 +2,11 @@
  * @jest-environment jsdom
  */
 import { CanvasRenderer } from "./CanvasRenderer";
+import { ImageCache } from "./ImageCache";
 import { installFakeCanvas, type FakeContext } from "../test-support/fakeDom";
 import type { Orb } from "../types/types";
+
+const at = (elapsed: number) => ({ now: 0, elapsed, moving: true });
 
 function makeOrb(overrides: Partial<Orb> = {}): Orb {
   return {
@@ -58,7 +61,7 @@ describe("CanvasRenderer", () => {
     expect(scales[scales.length - 1]?.args).toEqual([2, 2]);
   });
 
-  it("clears the whole canvas with the configured background first", () => {
+  it("clears the canvas, then fills the configured background", () => {
     const renderer = new CanvasRenderer(container, {
       backgroundColor: "#ffffff",
     });
@@ -76,8 +79,8 @@ describe("CanvasRenderer", () => {
     renderer.updateDimensions(300, 200);
 
     renderer.render([
-      makeOrb({ id: "a", label: "Alpha", value: 40 }),
-      makeOrb({ id: "b", label: "Beta", value: 25 }),
+      makeOrb({ id: "a", label: "Alpha", value: 40, radius: 50 }),
+      makeOrb({ id: "b", label: "Beta", value: 25, radius: 50 }),
     ]);
 
     const text = calls("fillText").map((call) => call.args[0]);
@@ -110,9 +113,10 @@ describe("CanvasRenderer", () => {
     const imageOrb = makeOrb({ imageUrl: "https://example.com/logo.png" });
 
     it("does not draw an orb image before it has finished loading", () => {
-      const renderer = new CanvasRenderer(container, {});
+      const cache = new ImageCache();
+      const renderer = new CanvasRenderer(container, {}, { images: cache });
       renderer.updateDimensions(300, 200);
-      renderer.preloadImages([imageOrb]);
+      cache.preload([imageOrb]);
 
       // In a browser, drawImage on a broken image throws and stops the loop.
       renderer.render([imageOrb]);
@@ -121,9 +125,10 @@ describe("CanvasRenderer", () => {
     });
 
     it("draws the image once it has loaded", () => {
-      const renderer = new CanvasRenderer(container, {});
+      const cache = new ImageCache();
+      const renderer = new CanvasRenderer(container, {}, { images: cache });
       renderer.updateDimensions(300, 200);
-      renderer.preloadImages([imageOrb]);
+      cache.preload([imageOrb]);
 
       images[0].onload?.(new Event("load"));
       renderer.render([imageOrb]);
@@ -163,7 +168,7 @@ describe("CanvasRenderer", () => {
       renderer.updateDimensions(300, 200);
       const ctx = contexts[contexts.length - 1];
       ctx.calls.length = 0;
-      renderer.render([makeOrb()], 1, phaseOf);
+      renderer.render([makeOrb()], at(1), phaseOf);
       return ctx.calls.find((c) => c.method === "arc")?.args[1];
     };
 
@@ -185,12 +190,13 @@ describe("CanvasRenderer", () => {
       const b = makeOrb({ id: "b" });
 
       contexts[0].calls.length = 0;
-      renderer.render([makeOrb({ id: "a" }), b], 5, phaseOf);
-      // Three arcs per bubble, so the second orb's base circle is the fourth.
-      const secondSlot = calls("arc")[3].args[1];
+      renderer.render([makeOrb({ id: "a" }), b], at(5), phaseOf);
+      // Body and glow clip are the two full size arcs of each bubble.
+      const full = () => calls("arc").filter((c) => c.args[2] === 30);
+      const secondSlot = full()[2].args[1];
       contexts[0].calls.length = 0;
-      renderer.render([b], 5, phaseOf);
-      const firstSlot = calls("arc")[0].args[1];
+      renderer.render([b], at(5), phaseOf);
+      const firstSlot = full()[0].args[1];
 
       expect(secondSlot).toBeCloseTo(firstSlot as number);
     });
@@ -211,28 +217,6 @@ describe("CanvasRenderer", () => {
       expect(() => new CanvasRenderer(container, {})).toThrow("canvas context");
       expect(container.children).toHaveLength(0);
     });
-
-    it("clears pending image callbacks on destroy so a late load does nothing", () => {
-      const images: HTMLImageElement[] = [];
-      jest.spyOn(window, "Image").mockImplementation(() => {
-        const img = document.createElement("img");
-        images.push(img);
-        return img;
-      });
-      const warn = jest
-        .spyOn(console, "warn")
-        .mockImplementation(() => undefined);
-      const renderer = new CanvasRenderer(container, {});
-      renderer.preloadImages([
-        makeOrb({ imageUrl: "https://example.com/a.png" }),
-      ]);
-
-      renderer.destroy();
-
-      expect(images[0].onload).toBeNull();
-      expect(images[0].onerror).toBeNull();
-      expect(warn).not.toHaveBeenCalled();
-    });
   });
 
   describe("accessibility and still mode (AC-1, AC-5, AC-8)", () => {
@@ -252,12 +236,12 @@ describe("CanvasRenderer", () => {
       const orb = makeOrb();
       const phase = () => Math.PI / 2;
 
-      renderer.render([orb], 0, phase);
+      renderer.render([orb], at(0), phase);
       expect(arcsAt(30)[0].args[1]).toBeCloseTo(110);
 
       contexts[0].calls.length = 0;
       renderer.setStill(true);
-      renderer.render([orb], 0, phase);
+      renderer.render([orb], at(0), phase);
       expect(arcsAt(30).every((call) => call.args[1] === 100)).toBe(true);
     });
 
@@ -295,23 +279,6 @@ describe("CanvasRenderer", () => {
       renderer.setFocus("missing");
       renderer.render([makeOrb()]);
       expect(arcsAt(35)).toHaveLength(0);
-    });
-
-    it("tells its owner when an image has loaded", () => {
-      const images: HTMLImageElement[] = [];
-      jest.spyOn(window, "Image").mockImplementation(() => {
-        const img = document.createElement("img");
-        images.push(img);
-        return img;
-      });
-      const onImageLoaded = jest.fn();
-      const renderer = new CanvasRenderer(container, {}, onImageLoaded);
-
-      renderer.preloadImages([makeOrb({ imageUrl: "https://x.test/a.png" })]);
-      expect(onImageLoaded).not.toHaveBeenCalled();
-      images[0].onload?.(new Event("load"));
-
-      expect(onImageLoaded).toHaveBeenCalledTimes(1);
     });
   });
 });

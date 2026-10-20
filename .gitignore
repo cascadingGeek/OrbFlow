@@ -3,3 +3,6 @@ dist/
 .DS_Store
 *.icloud
 *.tgz
+
+FEATURES.md
+UPDATE.md

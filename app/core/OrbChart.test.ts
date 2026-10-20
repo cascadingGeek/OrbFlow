@@ -40,7 +40,8 @@ describe("OrbChart (vanilla)", () => {
     return canvas;
   };
 
-  const tooltipOf = () => container.querySelector("div");
+  const tooltipOf = () =>
+    container.querySelector<HTMLElement>(":scope > div[aria-hidden]");
 
   const drawnText = () =>
     contexts.flatMap((ctx) =>
@@ -77,7 +78,7 @@ describe("OrbChart (vanilla)", () => {
   });
 
   describe("setData", () => {
-    it("scales radius linearly from minRadius to maxRadius by value", () => {
+    it("gives area in proportion to value, the largest at maxRadius (AC-3)", () => {
       const chart = new OrbChart(container, {
         minRadius: 20,
         maxRadius: 80,
@@ -85,18 +86,18 @@ describe("OrbChart (vanilla)", () => {
       });
 
       chart.setData([
-        { id: "low", label: "Low", value: 10 },
-        { id: "mid", label: "Mid", value: 55 },
+        { id: "tiny", label: "Tiny", value: 1 },
+        { id: "mid", label: "Mid", value: 25 },
         { id: "high", label: "High", value: 100 },
       ]);
 
       const radii = chart.getData().map((orb) => orb.radius);
-      expect(radii).toEqual([20, 50, 80]);
+      expect(radii).toEqual([20, 40, 80]);
     });
 
-    it("gives every orb minRadius when all values are equal", () => {
+    it("gives every orb maxRadius when all values are equal", () => {
       const chart = new OrbChart(container, {
-        minRadius: 30,
+        maxRadius: 30,
         transitionDuration: 0,
       });
 
@@ -163,7 +164,7 @@ describe("OrbChart (vanilla)", () => {
 
   describe("animation loop", () => {
     it("draws every orb's label and value on each frame", () => {
-      const chart = new OrbChart(container);
+      const chart = new OrbChart(container, { transitionDuration: 0 });
 
       chart.setData([{ id: "a", label: "Alpha", value: 40 }]);
 
@@ -266,10 +267,11 @@ describe("OrbChart (vanilla)", () => {
       expect(onOrbClick).not.toHaveBeenCalled();
     });
 
-    it("pushes nearby orbs away from a click", () => {
+    it("pushes nearby orbs away from a click on empty space (AC-2)", () => {
       const chart = chartWithOneOrb();
+      const [orb0] = chart.getData();
 
-      dispatchMouse(canvasOf(), "click", 220, 150);
+      dispatchMouse(canvasOf(), "click", orb0.x + orb0.radius + 5, orb0.y);
       frames.step();
 
       const [orb] = chart.getData();

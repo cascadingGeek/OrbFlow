@@ -86,4 +86,72 @@ describe("ConfigResolver", () => {
       expect(console.warn).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("spec 0005 options", () => {
+    const size = { width: 0, height: 0 };
+    let warn: jest.SpyInstance;
+    beforeEach(() => {
+      warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    });
+    afterEach(() => warn.mockRestore());
+
+    it("fills the new defaults", () => {
+      const config = new ConfigResolver().resolve({}, size);
+      expect(config).toMatchObject({
+        minRadius: 8,
+        maxRadius: 80,
+        popOnClick: false,
+        popStyle: "remove",
+        theme: "auto",
+        fontFamily: "Inter, system-ui, sans-serif",
+      });
+      expect(config.onOrbPop).toEqual(expect.any(Function));
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("keeps a minRadius of 0 and falls back to 8 for a bad one, warning once per value", () => {
+      const resolver = new ConfigResolver();
+      expect(resolver.resolve({ minRadius: 0 }, size).minRadius).toBe(0);
+      const current = resolver.resolve({ minRadius: -1 }, size);
+      expect(current.minRadius).toBe(8);
+      resolver.merge(current, { minRadius: -1 });
+      expect(warn).toHaveBeenCalledTimes(1);
+      resolver.merge(current, { minRadius: Infinity });
+      resolver.merge(current, { minRadius: NaN });
+      expect(warn).toHaveBeenCalledTimes(3);
+    });
+
+    it.each([
+      ["fontFamily", "", "Inter, system-ui, sans-serif"],
+      ["fontFamily", 12, "Inter, system-ui, sans-serif"],
+      ["theme", "sepia", "auto"],
+      ["popStyle", "explode", "remove"],
+    ] as const)(
+      "falls back for a bad %s (%p) and warns once",
+      (key, bad, fallback) => {
+        const resolver = new ConfigResolver();
+        const current = resolver.resolve({ [key]: bad } as never, size);
+        expect(current[key]).toBe(fallback);
+        resolver.merge(current, { [key]: bad } as never);
+        resolver.merge(current, { [key]: bad } as never);
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0][0]).toContain(key);
+      },
+    );
+
+    it("accepts every allowed value", () => {
+      const resolver = new ConfigResolver();
+      const base = resolver.resolve({}, size);
+      for (const theme of ["auto", "light", "dark"] as const) {
+        expect(resolver.merge(base, { theme }).theme).toBe(theme);
+      }
+      expect(resolver.merge(base, { popStyle: "ghost" }).popStyle).toBe(
+        "ghost",
+      );
+      expect(resolver.merge(base, { fontFamily: "Nunito" }).fontFamily).toBe(
+        "Nunito",
+      );
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
 });

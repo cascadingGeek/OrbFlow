@@ -91,6 +91,8 @@ Add an id based reconciler, a time based radius tweener, a pure data validator, 
 | Touch tap | Which orb was hit | Canvas `offsetX`, `offsetY` against non exiting orbs |
 | Touch tap | Whether the pointer was touch | `PointerEvent.pointerType` recorded on `pointerdown`, read on the `click` that follows |
 
+**Amended (2026-10-20, spec 0005)**: the target radius formula above is replaced by area scaling from zero with `minRadius` as a floor (spec 0005 AC-3). Tween, enter, exit, and retarget rules here are unchanged. Spec 0005 also settles the `minRadius` above `maxRadius` question: the floor clamps to `maxRadius`.
+
 **Key invariants**:
 - `id` is unique across live and exiting orbs combined.
 - Only accepted entries ever create or change an orb.

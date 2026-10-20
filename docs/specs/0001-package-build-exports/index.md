@@ -139,6 +139,8 @@ Before writing the budgets, step 1 of the build measures the current minified gz
 
 **Revision (2026-10-20, from spec 0004)**: the accessibility and reduced motion feature added about 3 kB gzip, against the 2 kB the spec for it had estimated. Measured after it landed: core 8.69 kB, react 9.23 kB, cdn 8.75 kB. The engineer chose to raise the budgets on purpose to 9 kB, 10 kB, and 9 kB instead of cutting features or structure. That leaves about 0.3 kB, 0.8 kB, and 0.25 kB of room. The rule that the React budget is the core budget plus 1 kB still holds. `.size-limit.json` carries the new numbers.
 
+**Revision (2026-10-20, from spec 0005)**: the bubble redesign and burst add an estimated 2 to 3 kB gzip. The engineer chose a second deliberate raise to core 12 kB, react 13 kB, cdn 12 kB (React still core plus 1 kB). `/develop` updates `.size-limit.json` in spec 0005 build step 3. No export changes: spec 0005 adds options and a `pop` method only.
+
 **Smoke fixtures** (`test/consumers/`, each a tiny private project with its own `package.json` and no lockfile):
 - `esm/`: `package.json` with `"type": "module"` and `react`/`react-dom` ^18 as dependencies. `index.mjs` imports both entries and asserts `typeof OrbChart === 'function'` for each, and that `globalThis.window` and `globalThis.document` are undefined after import (AC-1, AC-5).
 - `cjs/`: `package.json` with `"type": "commonjs"`, same React dependencies. `index.cjs` requires both entries with the same assertions (AC-1, AC-5).

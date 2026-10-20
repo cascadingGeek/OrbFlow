@@ -59,7 +59,8 @@ describe("OrbChart accessible layer", () => {
   const buttons = () =>
     [...container.querySelectorAll("button")] as HTMLButtonElement[];
   const texts = () => buttons().map((b) => b.textContent);
-  const tooltip = () => container.querySelector("div") as HTMLDivElement;
+  const tooltip = () =>
+    container.querySelector(":scope > div[aria-hidden]") as HTMLDivElement;
   const arcRadii = () => {
     const calls = contexts.flatMap((c) => c.calls);
     const lastClear = calls.map((c) => c.method).lastIndexOf("fillRect");
@@ -301,7 +302,7 @@ describe("OrbChart accessible layer", () => {
       const chart = make({ enableTooltip: false });
       chart.pause();
       buttons()[0].focus();
-      expect(container.querySelector("div")).toBeNull();
+      expect(container.querySelector(":scope > div[aria-hidden]")).toBeNull();
       expect(arcRadii().length).toBeGreaterThan(2);
     });
 

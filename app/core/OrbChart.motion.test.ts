@@ -73,7 +73,8 @@ describe("OrbChart reduced motion", () => {
   const draws = () =>
     contexts.flatMap((c) => c.calls).filter((c) => c.method === "fillRect")
       .length;
-  const tooltip = () => container.querySelector("div") as HTMLDivElement;
+  const tooltip = () =>
+    container.querySelector(":scope > div[aria-hidden]") as HTMLDivElement;
   const snapshot = (chart: OrbChart) =>
     chart.getData().map((o) => [o.id, o.x, o.y, o.radius]);
   const overlap = (orbs: Orb[]) => {
@@ -190,10 +191,12 @@ describe("OrbChart reduced motion", () => {
     });
 
     it("floats in normal mode, so the check above has teeth", () => {
-      const chart = make({ reducedMotion: "never" });
+      const chart = make({ reducedMotion: "never", transitionDuration: 0 });
       clock = 700;
       chart.start();
+      frames.step();
       const orb = chart.getData()[0];
+      expect(orb.radius).toBeGreaterThan(0);
       const centers = contexts
         .flatMap((c) => c.calls)
         .filter((c) => c.method === "arc" && c.args[2] === orb.radius);
@@ -207,7 +210,7 @@ describe("OrbChart reduced motion", () => {
       chart.setData([row("a", 60), row("b", 5)]);
       const [a, b] = chart.getData();
       expect(a.radius).toBe(50);
-      expect(b.radius).toBe(25);
+      expect(b.radius).toBeCloseTo(50 * Math.sqrt(5 / 60));
       expect(chart.getData()).toHaveLength(2);
     });
 
@@ -347,7 +350,7 @@ describe("OrbChart reduced motion", () => {
       chart.updateConfig({ reducedMotion: "always" });
       expect(frames.pending()).toBe(0);
       const radii = chart.getData().map((o) => o.radius);
-      expect(radii).toEqual([25]);
+      expect(radii).toEqual([50]);
     });
   });
 

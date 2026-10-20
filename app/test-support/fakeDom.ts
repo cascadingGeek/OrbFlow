@@ -15,8 +15,20 @@ export interface FakeContext {
   textAlign: string;
   textBaseline: string;
   globalAlpha: number;
+  /** Every gradient created, in order, with the stops added to it. */
+  gradients: FakeGradient[];
   [method: string]: unknown;
 }
+
+/** A gradient the fake context made: how it was created and its stops. */
+export interface FakeGradient {
+  kind: "radial" | "linear" | "conic";
+  args: number[];
+  stops: [number, string][];
+}
+
+/** Width the fake `measureText` reports per character, per pixel of size. */
+export const FAKE_CHAR_WIDTH = 0.6;
 
 const recordedMethods = [
   "fillRect",
@@ -31,10 +43,21 @@ const recordedMethods = [
   "drawImage",
   "fillText",
   "scale",
+  "clearRect",
+  "translate",
+  "rotate",
+  "moveTo",
+  "setLineDash",
 ];
 
-/** Makes every canvas return a fresh recording context. */
-export function installFakeCanvas(): FakeContext[] {
+/**
+ * Makes every canvas return a fresh recording context. `measureText` reports
+ * `FAKE_CHAR_WIDTH * size` per character, with the size read from `font`.
+ * Pass `conic: false` for a browser without `createConicGradient`.
+ */
+export function installFakeCanvas(
+  options: { conic?: boolean } = {},
+): FakeContext[] {
   const contexts: FakeContext[] = [];
   jest
     .spyOn(HTMLCanvasElement.prototype, "getContext")
@@ -48,11 +71,31 @@ export function installFakeCanvas(): FakeContext[] {
         textAlign: "start",
         textBaseline: "alphabetic",
         globalAlpha: 1,
+        gradients: [],
       };
       for (const method of recordedMethods) {
         ctx[method] = (...args: unknown[]) => ctx.calls.push({ method, args });
       }
-      ctx.createRadialGradient = () => ({ addColorStop: () => undefined });
+      const gradient =
+        (kind: FakeGradient["kind"]) =>
+        (...args: number[]) => {
+          const made: FakeGradient = { kind, args, stops: [] };
+          ctx.gradients.push(made);
+          ctx.calls.push({ method: `${kind}Gradient`, args });
+          return {
+            addColorStop: (at: number, color: string) =>
+              made.stops.push([at, color]),
+          };
+        };
+      ctx.createRadialGradient = gradient("radial");
+      ctx.createLinearGradient = gradient("linear");
+      if (options.conic !== false) {
+        ctx.createConicGradient = gradient("conic");
+      }
+      ctx.measureText = (text: string) => {
+        const size = Number(/(\d+(?:\.\d+)?)px/.exec(ctx.font)?.[1] ?? 10);
+        return { width: text.length * size * FAKE_CHAR_WIDTH };
+      };
       contexts.push(ctx);
       return ctx as unknown as CanvasRenderingContext2D;
     });

@@ -173,13 +173,15 @@ export class PhysicsEngine {
     }
   }
 
-  // Pushes orbs away from a pointer. Takes the orbs like update(), so the
+  // Pushes orbs away from a point. Takes the orbs like update(), so the
   // engine holds no orb list of its own that could drift out of date.
+  // `strength` is the push right at the point; 2 for a click, 1 for a pop.
   applyMouseRepulsion(
     orbs: Orb[],
     mouseX: number,
     mouseY: number,
     radius: number = 150,
+    strength: number = 2,
   ) {
     orbs.forEach((orb) => {
       const dx = orb.x - mouseX;
@@ -187,7 +189,7 @@ export class PhysicsEngine {
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance < radius && distance > 0) {
-        const force = (1 - distance / radius) * 2; // Stronger when closer
+        const force = (1 - distance / radius) * strength; // Stronger when closer
         orb.vx += (dx / distance) * force;
         orb.vy += (dy / distance) * force;
       }

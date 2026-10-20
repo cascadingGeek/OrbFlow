@@ -400,4 +400,66 @@ describe("<OrbChart> behavior", () => {
       expect(container.querySelector("canvas")).toBeNull();
     });
   });
+
+  describe("popping (spec 0005 AC-14)", () => {
+    it("pops through the ref, and returns false once unmounted", () => {
+      const ref = createRef<OrbChartHandle>();
+      const { unmount } = render(<OrbChart {...props()} ref={ref} />);
+      const handle = ref.current;
+
+      expect(handle?.pop("a")).toBe(true);
+      expect(handle?.pop("a")).toBe(false);
+      expect(handle?.getData().map((orb) => orb.id)).toEqual(["b"]);
+      unmount();
+      expect(handle?.pop("b")).toBe(false);
+    });
+
+    it("calls the newest onOrbPop without updating the chart", () => {
+      const first = jest.fn();
+      const second = jest.fn();
+      const ref = createRef<OrbChartHandle>();
+      const { rerender } = render(
+        <OrbChart {...props({ onOrbPop: first })} ref={ref} />,
+      );
+      updateConfig.mockClear();
+
+      rerender(<OrbChart {...props({ onOrbPop: second })} ref={ref} />);
+      ref.current?.pop("a");
+
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(updateConfig).not.toHaveBeenCalled();
+    });
+
+    it("passes the new options by value, sending only what changed", () => {
+      const look = {
+        popOnClick: true,
+        popStyle: "ghost",
+        theme: "light",
+        fontFamily: "Nunito, sans-serif",
+      } as const;
+      const { rerender } = render(<OrbChart {...props(look)} />);
+      updateConfig.mockClear();
+
+      rerender(<OrbChart {...props({ ...look })} />);
+      expect(updateConfig).not.toHaveBeenCalled();
+
+      rerender(<OrbChart {...props({ ...look, theme: "dark" })} />);
+      expect(updateConfig).toHaveBeenCalledWith({ theme: "dark" });
+    });
+
+    it("pops on click when popOnClick is set", () => {
+      const onOrbPop = jest.fn();
+      const { container } = render(
+        <OrbChart
+          {...props({ data: [data[0]], popOnClick: true, onOrbPop })}
+        />,
+      );
+      dispatchMouse(canvasOf(container), "click", 200, 150);
+
+      expect(onOrbPop).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "a" }),
+      );
+    });
+  });
 });

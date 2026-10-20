@@ -207,6 +207,18 @@ describe("PhysicsEngine", () => {
       expect(far.vx).toBe(0);
       expect(far.vy).toBe(0);
     });
+
+    it("pushes with strength 2 by default and with the given strength otherwise", () => {
+      const engine = new PhysicsEngine(400, 400);
+      const click = makeOrb({ id: "a", x: 275, y: 200 });
+      const pop = makeOrb({ id: "b", x: 275, y: 200 });
+
+      engine.applyMouseRepulsion([click], 200, 200, 150);
+      engine.applyMouseRepulsion([pop], 200, 200, 150, 1);
+
+      expect(click.vx).toBeCloseTo(1);
+      expect(pop.vx).toBeCloseTo(0.5);
+    });
   });
 
   describe("large datasets", () => {

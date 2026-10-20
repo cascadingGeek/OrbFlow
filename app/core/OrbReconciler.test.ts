@@ -59,8 +59,32 @@ describe("OrbReconciler target radius and colour", () => {
     return orbs.map((o) => o.radius);
   };
 
-  it("scales radius linearly across the value range", () => {
-    expect(radiiAfterSettling([0, 50, 100])).toEqual([20, 50, 80]);
+  it("gives area in proportion to value, the largest at maxRadius (AC-3)", () => {
+    const [small, big] = radiiAfterSettling([25, 100]);
+    expect(big).toBe(80);
+    expect(small).toBe(40);
+    expect((big / small) ** 2).toBeCloseTo(4);
+  });
+
+  it("sizes the spec's example values with the default floor of 8 (AC-3)", () => {
+    const config = resolver.resolve(
+      { width: 400, height: 300 },
+      { width: 0, height: 0 },
+    );
+    const [btc, small] = radiiAfterSettling([95.5, 3.2], config);
+    expect(btc).toBe(80);
+    expect(small).toBeCloseTo(80 * Math.sqrt(3.2 / 95.5));
+  });
+
+  it("gives a value of 0, and every value when all are 0, the floor (AC-3)", () => {
+    expect(radiiAfterSettling([0, 50])).toEqual([20, 80]);
+    expect(radiiAfterSettling([0, 0])).toEqual([20, 20]);
+  });
+
+  it("uses maxRadius as the floor when minRadius is larger (AC-3)", () => {
+    expect(
+      radiiAfterSettling([1, 100], sized({ minRadius: 90, maxRadius: 50 })),
+    ).toEqual([50, 50]);
   });
 
   it("shrinks every other orb toward minRadius when one huge value arrives", () => {
@@ -71,8 +95,8 @@ describe("OrbReconciler target radius and colour", () => {
     expect(radii[1]).toBeCloseTo(20, 2);
   });
 
-  it("gives equal values minRadius instead of dividing by zero", () => {
-    expect(radiiAfterSettling([7, 7])).toEqual([20, 20]);
+  it("gives equal values maxRadius", () => {
+    expect(radiiAfterSettling([7, 7])).toEqual([80, 80]);
   });
 
   it("never produces a NaN or negative radius for a value of 0", () => {
@@ -138,7 +162,7 @@ describe("OrbReconciler target radius and colour", () => {
     reconciler.retargetAll(orbs, config, 10, 400);
     tweener.step(orbs, 10);
 
-    expect(orbs[0].radius).toBe(20);
+    expect(orbs[0].radius).toBe(80);
   });
 });
 
@@ -171,7 +195,7 @@ describe("OrbReconciler duration override", () => {
 
     expect(settled.map((o) => o.id)).toEqual(["b", "c"]);
     expect(settled.every((o) => o.radius > 0)).toBe(true);
-    expect(settled[1].radius).toBe(config.minRadius);
+    expect(settled[1].radius).toBeCloseTo(80 / 3);
   });
 
   it("uses the configured duration when no override is given", () => {
@@ -182,6 +206,28 @@ describe("OrbReconciler duration override", () => {
     tweener.step(orbs, 200);
 
     expect(orbs[0].radius).toBeGreaterThan(0);
-    expect(orbs[0].radius).toBeLessThan(config.minRadius);
+    expect(orbs[0].radius).toBeLessThan(config.maxRadius);
+  });
+});
+
+describe("OrbReconciler drop (spec 0005 AC-8)", () => {
+  it("forgets a popped orb's seed, place, and tween", () => {
+    const tweener = new RadiusTweener();
+    const reconciler = new OrbReconciler(tweener, () => 0.5);
+    const config = new ConfigResolver().resolve({}, { width: 0, height: 0 });
+    const [orb] = reconciler.reconcile(
+      [],
+      [{ id: "a", label: "a", value: 1 }],
+      config,
+      0,
+    );
+    expect(reconciler.awaiting("a")).toBe(true);
+
+    reconciler.drop("a");
+
+    expect(reconciler.awaiting("a")).toBe(false);
+    expect(reconciler.phaseOf(orb)).toBe(0);
+    tweener.step([orb], 1000);
+    expect(orb.radius).toBe(0);
   });
 });

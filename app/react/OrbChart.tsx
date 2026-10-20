@@ -16,8 +16,8 @@ import { useLatest } from "./useLatest";
  *
  * - `data` is applied with `setData` whenever its reference changes. Keep it
  *   stable (for example with `useMemo`) to avoid needless updates.
- * - Callbacks (`onOrbClick`, `onOrbHover`, `onDataIssue`) can change on every
- *   render. The newest one always runs, and a change causes no chart update.
+ * - Callbacks (`onOrbClick`, `onOrbHover`, `onDataIssue`, `onOrbPop`) can
+ *   change on every render. The newest one always runs, and a change causes no chart update.
  * - Config values are compared by value, and `colorScheme` item by item, so
  *   inline objects and arrays with equal values cost nothing.
  * - A config prop that becomes `undefined` (or is removed) keeps its last
@@ -56,6 +56,11 @@ export interface OrbChartHandle {
    * as read only.
    */
   getData(): Orb[];
+  /**
+   * Pops the live bubble `id`, as `OrbChart.pop` does. Returns `false` when
+   * there is no such bubble or the chart is not mounted.
+   */
+  pop(id: string): boolean;
 }
 
 /**
@@ -68,14 +73,19 @@ export interface OrbChartHandle {
  */
 export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
   function OrbChart({ data, className, style, ...rest }, ref) {
-    const { onOrbClick, onOrbHover, onDataIssue, ...config } = rest;
+    const { onOrbClick, onOrbHover, onDataIssue, onOrbPop, ...config } = rest;
     const containerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<OrbChartCore | null>(null);
     const unmounted = useRef(false);
     const pendingPause = useRef(false);
     const appliedConfig = useRef<ConfigValues>(config);
     const appliedData = useRef(data);
-    const callbacks = useLatest({ onOrbClick, onOrbHover, onDataIssue });
+    const callbacks = useLatest({
+      onOrbClick,
+      onOrbHover,
+      onDataIssue,
+      onOrbPop,
+    });
 
     useImperativeHandle(
       ref,
@@ -89,6 +99,7 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
           else if (!unmounted.current) pendingPause.current = true;
         },
         getData: () => chartRef.current?.getData() ?? [],
+        pop: (id) => chartRef.current?.pop(id) ?? false,
       }),
       [],
     );
@@ -102,6 +113,7 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
         onOrbClick: (orb, event) => callbacks.current.onOrbClick?.(orb, event),
         onOrbHover: (orb) => callbacks.current.onOrbHover?.(orb),
         onDataIssue: (issues) => callbacks.current.onDataIssue?.(issues),
+        onOrbPop: (orb) => callbacks.current.onOrbPop?.(orb),
       });
       chartRef.current = chart;
       appliedConfig.current = config;

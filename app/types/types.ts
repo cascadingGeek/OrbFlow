@@ -28,10 +28,27 @@ export interface OrbChartConfig extends PhysicsConfig {
   width?: number;
   height?: number;
   backgroundColor?: string;
+  /**
+   * The smallest radius in pixels a bubble is drawn with. Bubble area follows
+   * the value (a value twice as big gets twice the area, up to `maxRadius` for
+   * the largest value), and `minRadius` is a floor under that, so tiny values
+   * stay visible. A negative or non finite value falls back to the default
+   * with a console warning.
+   * @default 8
+   */
   minRadius?: number;
+  /**
+   * The radius in pixels of the bubble with the largest value.
+   * @default 80
+   */
   maxRadius?: number;
   colorScheme?: string[];
   enableTooltip?: boolean;
+  /**
+   * Called when a bubble is clicked, tapped, or activated with Enter or Space
+   * from the keyboard. Runs before any pop (see `popOnClick`).
+   * @default a no op
+   */
   onOrbClick?: (orb: Orb, event: MouseEvent) => void;
   onOrbHover?: (orb: Orb | null) => void;
   /**
@@ -73,6 +90,41 @@ export interface OrbChartConfig extends PhysicsConfig {
    * @default "auto"
    */
   reducedMotion?: "auto" | "always" | "never";
+  /**
+   * Whether a click, tap, Enter, or Space on a bubble pops it, after
+   * `onOrbClick` has run. `chart.pop(id)` works either way.
+   * @default false
+   */
+  popOnClick?: boolean;
+  /**
+   * What a popped bubble leaves behind: `"remove"` leaves nothing, `"ghost"`
+   * leaves a dashed outline with a faded label until the next `setData`. Any
+   * other value logs a warning and falls back to `"remove"`.
+   * @default "remove"
+   */
+  popStyle?: "remove" | "ghost";
+  /**
+   * Called once for every bubble that pops, with the orb as it was just
+   * before it popped. Errors thrown by the handler are caught and logged.
+   * @default a no op
+   */
+  onOrbPop?: (orb: Orb) => void;
+  /**
+   * Which bubble look to draw. `"auto"` picks `"light"` when
+   * `backgroundColor` is a light color and `"dark"` otherwise (including
+   * `"transparent"`, named colors, and `hsl()`, so set it yourself on a light
+   * page behind a transparent chart). Any other value logs a warning and
+   * falls back to `"auto"`.
+   * @default "auto"
+   */
+  theme?: "auto" | "light" | "dark";
+  /**
+   * The font for bubble labels and values. The chart does not load fonts:
+   * load the font on the page first. A value that is not a non empty string
+   * logs a warning and falls back to the default.
+   * @default "Inter, system-ui, sans-serif"
+   */
+  fontFamily?: string;
 }
 
 /**

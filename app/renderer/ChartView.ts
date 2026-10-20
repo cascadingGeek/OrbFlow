@@ -1,8 +1,12 @@
 import type { Orb, OrbChartConfig } from "../types/types";
 import { AccessibleLayer, type LayerConfig } from "./AccessibleLayer";
 import { CanvasInput, type InputConfig } from "./CanvasInput";
-import { CanvasRenderer } from "./CanvasRenderer";
+import { BubblePainter } from "./BubblePainter";
+import { BurstEffects, type PopSnapshot } from "./BurstEffects";
+import { CanvasRenderer, type FrameTime } from "./CanvasRenderer";
 import { FocusCue } from "./FocusCue";
+import { ImageCache } from "./ImageCache";
+import { LiveAnnouncer } from "./LiveAnnouncer";
 import { TooltipView } from "./TooltipView";
 import { Teardown } from "../core/Teardown";
 
@@ -11,10 +15,14 @@ export type ViewConfig = OrbChartConfig & InputConfig & LayerConfig;
 
 /** What the view asks of the chart that owns it. */
 export interface ViewHost {
-  /** Pointer press on the canvas, in canvas pixels. */
-  onCanvasClick(x: number, y: number): void;
+  /** A click or tap that missed every orb, in canvas pixels. */
+  onCanvasMiss(x: number, y: number): void;
+  /** A click, tap, Enter, or Space on an orb. */
+  onActivate(orb: Orb, event: MouseEvent): void;
   /** An image finished loading. */
   onImageLoaded(): void;
+  /** The loop clock, for bursts and ghosts. */
+  now(): number;
   /** Milliseconds on the chart's clock, for the float offset. */
   elapsed(): number;
   /** Float wobble phase for an orb. */
@@ -26,12 +34,15 @@ export interface ViewHost {
 }
 
 /**
- * Puts together everything the user sees and touches: the canvas, the tooltip,
- * the pointer input, the accessible list, the focus cue, and the resize
- * observer. If one part fails
- * to build, the parts before it are removed again.
+ * Puts together everything the user sees and touches: the canvas with its
+ * image cache and burst effects, the tooltip, the pointer input, the
+ * accessible list, the live region, the focus cue, and the resize observer.
+ * If one part fails to build, the parts before it are removed again.
  */
 export class ChartView {
+  private readonly images: ImageCache;
+  private readonly effects: BurstEffects;
+  private readonly announcer: LiveAnnouncer;
   private readonly renderer: CanvasRenderer;
   private readonly tooltip: TooltipView;
   private readonly input: CanvasInput;
@@ -41,22 +52,27 @@ export class ChartView {
 
   constructor(
     container: HTMLElement,
-    getConfig: () => ViewConfig,
+    private readonly getConfig: () => ViewConfig,
     private readonly host: ViewHost,
   ) {
     try {
-      this.renderer = new CanvasRenderer(
-        container,
-        getConfig(),
-        host.onImageLoaded,
-      );
+      this.images = new ImageCache(host.onImageLoaded);
+      this.teardown.add(() => this.images.dispose());
+      const painter = new BubblePainter();
+      this.effects = new BurstEffects(painter);
+      this.teardown.add(() => this.effects.clear());
+      this.renderer = new CanvasRenderer(container, getConfig(), {
+        images: this.images,
+        painter,
+        effects: this.effects,
+      });
       this.teardown.add(() => this.renderer.destroy());
       this.tooltip = new TooltipView(container, getConfig);
       this.input = new CanvasInput(
         this.renderer.element,
         this.tooltip,
         getConfig,
-        host.onCanvasClick,
+        { onActivate: host.onActivate, onCanvasMiss: host.onCanvasMiss },
       );
       this.teardown.add(() => this.input.dispose());
       this.cue = new FocusCue({
@@ -69,8 +85,11 @@ export class ChartView {
       this.layer = new AccessibleLayer(container, getConfig, {
         onFocus: (orb) => this.cue.focus(orb),
         onEscape: () => this.cue.escape(),
+        onActivate: host.onActivate,
       });
       this.teardown.add(() => this.layer.dispose());
+      this.announcer = new LiveAnnouncer(container);
+      this.teardown.add(() => this.announcer.dispose());
       const observer = new ResizeObserver(() => host.onResize());
       this.teardown.add(() => observer.disconnect());
       observer.observe(container);
@@ -81,8 +100,40 @@ export class ChartView {
   }
 
   /** Draws one frame of `orbs`. */
-  render(orbs: Orb[], elapsed: number) {
-    this.renderer.render(orbs, elapsed, this.host.phaseOf);
+  render(orbs: Orb[], time: FrameTime) {
+    this.renderer.render(orbs, time, this.host.phaseOf);
+  }
+
+  /** The orb as drawn right now, or `null` when it has no size or place. */
+  snapshotOf(orb: Orb, placed: boolean): PopSnapshot | null {
+    if (orb.radius <= 0 || !placed) return null;
+    const bubble = this.renderer.bubbleOf(
+      orb,
+      this.host.elapsed(),
+      this.host.phaseOf,
+    );
+    return { ...bubble, id: orb.id };
+  }
+
+  /** Plays a burst (or, when idle, only leaves the ghost `popStyle` asks for). */
+  burst(snapshot: PopSnapshot, now: number, idle: boolean) {
+    const ghost = this.getConfig().popStyle === "ghost";
+    this.effects.add(snapshot, now, ghost, idle);
+  }
+
+  /** Ends every burst and fades ghosts in fully. True if anything changed. */
+  finishBursts(now: number): boolean {
+    return this.effects.finishAll(now);
+  }
+
+  /** Removes every ghost. */
+  clearGhosts() {
+    this.effects.clearGhosts();
+  }
+
+  /** Tells screen reader users what happened. */
+  announce(text: string) {
+    this.announcer.announce(text);
   }
 
   /** Sets the canvas size in CSS pixels. */
@@ -92,7 +143,7 @@ export class ChartView {
 
   /** Starts loading the orbs' images. */
   preloadImages(orbs: Orb[]) {
-    this.renderer.preloadImages(orbs);
+    this.images.preload(orbs);
   }
 
   /** Tells the pointer input which orbs can be hit. */
@@ -109,12 +160,15 @@ export class ChartView {
   /** Applies the new options to every part. */
   updateConfig(config: ViewConfig) {
     this.renderer.updateConfig(config);
+    if (config.popStyle !== "ghost") this.effects.clearGhosts();
     this.input.refresh();
     this.layer.update();
   }
 
-  /** Still mode: no float wobble and no tooltip fade. */
+  /** Still mode: no float wobble, no tooltip fade, and no bursts. */
   setStill(still: boolean) {
+    // A still chart shows only end states, so bursts in flight finish first.
+    if (still) this.effects.finishAll(this.host.now());
     this.renderer.setStill(still);
     this.tooltip.setFade(!still);
   }

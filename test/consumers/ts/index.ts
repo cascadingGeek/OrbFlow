@@ -25,6 +25,10 @@ const config: OrbChartConfig = {
   popOnClick: true,
   popStyle: "ghost",
   onOrbPop: (orb) => orb.id,
+  // Spec 0006: rising bubbles and restore (AC-14).
+  enterStyle: "rise",
+  restoreOnNextPop: true,
+  onOrbRestore: (orb) => orb.id,
   theme: "light",
   fontFamily: "Nunito, sans-serif",
   minRadius: 8,
@@ -45,7 +49,11 @@ const badMotion: OrbChartConfig = { reducedMotion: "sometimes" };
 const badPop: OrbChartConfig = { popStyle: "explode" };
 // @ts-expect-error: theme is "auto", "light", or "dark"
 const badTheme: OrbChartConfig = { theme: "sepia" };
+// @ts-expect-error: enterStyle is "rise" or "grow"
+const badEnter: OrbChartConfig = { enterStyle: "fade" };
 const popped: boolean = new OrbChart("#chart", config).pop("a");
+const restored: boolean = new OrbChart("#chart", config).restore("a");
+const restoredAll: boolean = new OrbChart("#chart", config).restore();
 
 // The ref handle has start, pause, getData (spec 0003 AC-11), and pop
 // (spec 0005 AC-14).
@@ -54,6 +62,8 @@ handle.current?.start();
 handle.current?.pause();
 const orbCount: number = handle.current?.getData().length ?? 0;
 const handlePopped: boolean = handle.current?.pop("a") ?? false;
+const handleRestored: boolean = handle.current?.restore("a") ?? false;
+const handleRestoredAll: boolean = handle.current?.restore() ?? false;
 // @ts-expect-error: the handle has no destroy, React owns the lifecycle
 handle.current?.destroy();
 
@@ -69,6 +79,11 @@ export const used = [
   reactIssues,
   badPop,
   badTheme,
+  badEnter,
   popped,
+  restored,
+  restoredAll,
   handlePopped,
+  handleRestored,
+  handleRestoredAll,
 ];

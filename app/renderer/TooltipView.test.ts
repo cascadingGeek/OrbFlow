@@ -46,6 +46,27 @@ describe("TooltipView", () => {
     expect(el().style.opacity).toBe("1");
   });
 
+  it("keeps a tooltip for a bubble below the canvas inside the chart (spec 0006 AC-5)", () => {
+    jest.spyOn(el(), "getBoundingClientRect").mockReturnValue({
+      width: 100,
+      height: 40,
+    } as DOMRect);
+
+    view.show(makeOrb(), 500, 900, false, "focus");
+
+    expect(parseFloat(el().style.left)).toBeLessThanOrEqual(300);
+    expect(parseFloat(el().style.left)).toBeGreaterThanOrEqual(0);
+    expect(parseFloat(el().style.top)).toBeLessThanOrEqual(260);
+    expect(parseFloat(el().style.top)).toBeGreaterThanOrEqual(0);
+  });
+
+  it("never places a tooltip at a negative position", () => {
+    view.show(makeOrb(), -50, -50, false, "focus");
+
+    expect(el().style.left).toBe("0px");
+    expect(el().style.top).toBe("0px");
+  });
+
   it("lets only the owner hide it", () => {
     view.show(makeOrb(), 1, 1, false, "focus");
     expect(view.owner).toBe("focus");

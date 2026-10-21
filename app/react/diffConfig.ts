@@ -6,6 +6,7 @@ export const CALLBACK_KEYS = [
   "onOrbHover",
   "onDataIssue",
   "onOrbPop",
+  "onOrbRestore",
 ] as const;
 
 /** Config values the chart can be updated with, without the callbacks. */

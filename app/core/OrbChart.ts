@@ -6,8 +6,11 @@ import { reportIssues } from "./reportIssues";
 import { ConfigResolver, type ResolvedConfig } from "./ConfigResolver";
 import { DataValidator } from "./DataValidator";
 import { OrbReconciler } from "./OrbReconciler";
+import { ChartPopHost } from "./ChartPopHost";
 import { PopController } from "./PopController";
+import { PopLedger } from "./PopLedger";
 import { RadiusTweener } from "./RadiusTweener";
+import { RiseTracker } from "./RiseTracker";
 import { MotionPreference } from "./MotionPreference";
 import { Settler } from "./Settler";
 import { Redrawer } from "./Redrawer";
@@ -15,9 +18,7 @@ import { Teardown } from "./Teardown";
 import { resolveContainer } from "./resolveContainer";
 import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
 
-/**
- * Main OrbChart class - framework agnostic with bubble styling
- */
+/** The chart, framework agnostic. */
 export class OrbChart {
   private container: HTMLElement;
   private physicsEngine!: PhysicsEngine;
@@ -29,6 +30,8 @@ export class OrbChart {
   private playback: Playback;
   private tweener: RadiusTweener;
   private reconciler: OrbReconciler;
+  private rises: RiseTracker;
+  private ledger = new PopLedger();
   private validator = new DataValidator();
   private resolver = new ConfigResolver();
   private orbs: Orb[] = [];
@@ -39,7 +42,6 @@ export class OrbChart {
 
   constructor(container: HTMLElement | string, config: OrbChartConfig = {}) {
     this.container = resolveContainer(container);
-
     this.config = this.resolver.resolve(config, {
       width: this.container.clientWidth,
       height: this.container.clientHeight,
@@ -47,12 +49,20 @@ export class OrbChart {
     this.loop = new AnimationLoop((now) => this.frame(now));
     this.playback = new Playback(this.loop);
     this.startTime = this.loop.now();
+    this.rises = new RiseTracker({
+      config: () => this.config,
+      idle: () => this.playback.idle,
+      gateOpen: () => this.view.gateOpen,
+      openGate: () => this.view.openGate(),
+    });
     this.reconciler = new OrbReconciler(
-      (this.tweener = new RadiusTweener((orb) =>
-        this.reconciler.forget(orb.id),
-      )),
+      (this.tweener = new RadiusTweener((orb) => {
+        this.reconciler.forget(orb.id);
+        this.rises.forget(orb.id);
+      })),
+      Math.random,
+      () => this.ledger.all(),
     );
-
     try {
       this.mount();
     } catch (error) {
@@ -74,6 +84,8 @@ export class OrbChart {
       now: () => this.loop.now(),
       elapsed: () => this.loop.now() - this.startTime,
       phaseOf: (orb) => this.reconciler.phaseOf(orb),
+      riseOf: (orb, now) => this.rises.offsetOf(orb, now, this.config.height),
+      onGateOpen: () => this.rises.release(this.loop.now()),
       onResize: () => this.handleResize(),
       redrawIfStopped: () => {
         if (!this.loop.playing) this.draw(this.loop.now());
@@ -93,57 +105,57 @@ export class OrbChart {
       snap: () => this.sync(Infinity),
       settleOrbs: () => settler.settle(this.orbs),
       draw: (now) => this.draw(now),
-      setStill: (still) => this.view.setStill(still),
+      setStill: (still) => {
+        // A still chart shows only end states, so rises finish first.
+        if (still) this.rises.finishAll();
+        this.view.setStill(still);
+      },
     });
     this.motion = new MotionPreference(this.config.reducedMotion, (reduced) =>
       this.redrawer.flipped(reduced),
     );
     this.teardown.add(() => this.motion.dispose());
-    this.pops = new PopController({
-      live: (id) => this.getData().find((orb) => orb.id === id) ?? null,
-      snapshotOf: (orb) =>
-        this.view.snapshotOf(orb, !this.reconciler.awaiting(orb.id)),
-      remove: (orb) => {
-        this.orbs = this.orbs.filter((other) => other !== orb);
-        this.reconciler.drop(orb.id);
-        this.view.syncInput(this.getData());
-        this.view.syncList(this.getData());
-      },
-      burst: (snapshot, idle) =>
-        this.view.burst(snapshot, this.loop.now(), idle),
-      announce: (text) => this.view.announce(text),
-      push: (x, y, reach, strength) =>
-        this.physicsEngine.applyMouseRepulsion(
-          this.orbs,
-          x,
-          y,
-          reach,
-          strength,
-        ),
-      idle: () => this.playback.idle,
-      redraw: () => this.redrawer.run(false),
-      config: () => this.config,
-    });
+    this.pops = new PopController(
+      new ChartPopHost({
+        view: this.view,
+        physics: this.physicsEngine,
+        reconciler: this.reconciler,
+        rises: this.rises,
+        ledger: this.ledger,
+        orbs: {
+          all: () => this.orbs,
+          set: (orbs) => (this.orbs = orbs),
+          live: () => this.getData(),
+        },
+        config: () => this.config,
+        now: () => this.loop.now(),
+        playback: this.playback,
+        redraw: (settle) => this.redrawer.run(settle),
+      }),
+    );
     this.redrawer.apply(this.motion.reduced);
     this.handleResize();
   }
 
   /**
    * Load data. Orbs are matched by `id`: existing ones keep their place and
-   * animate to their new size, new ones grow in, missing ones shrink out. Bad
-   * entries are skipped and reported, never thrown.
+   * animate to their new size, new ones rise in (or grow, see `enterStyle`),
+   * missing ones shrink out. Bad entries are skipped and reported, never
+   * thrown. Popped bubbles are forgotten: the data is the truth.
    */
   setData(data: OrbDataInput[]) {
     if (this.destroyed) return;
 
     const { accepted, issues, notArray } = this.validator.validate(data);
     if (notArray) console.warn("OrbFlow: setData expects an array, got none.");
-    // Data is the truth: ghosts go, and a popped id in it grows back in.
+    // Data is the truth: ghosts and popped records go.
     this.view.clearGhosts();
+    this.ledger.clear();
 
     // A paused or still chart jumps to the new data and draws one frame.
     const now = this.loop.now();
     const duration = this.playback.idle ? 0 : undefined;
+    const known = new Set(this.orbs.map((orb) => orb.id));
     this.orbs = this.reconciler.reconcile(
       this.orbs,
       accepted,
@@ -151,6 +163,7 @@ export class OrbChart {
       now,
       duration,
     );
+    this.rises.enter(this.orbs, known, now);
     this.sync(now);
     this.view.syncList(this.getData());
     this.view.preloadImages(this.orbs);
@@ -161,8 +174,6 @@ export class OrbChart {
 
   private handleResize() {
     const rect = this.container.getBoundingClientRect();
-
-    // Ensure we have dimensions
     if (rect.width === 0 || rect.height === 0) return;
 
     this.config.width = rect.width;
@@ -175,9 +186,10 @@ export class OrbChart {
     if (this.playback.idle) this.redrawer.run();
   }
 
-  /** Advances tweens, drops exited orbs, and clears a stale hover. */
+  /** Advances tweens and rises, drops exited orbs, and clears a stale hover. */
   private sync(now: number) {
     this.orbs = this.tweener.step(this.orbs, now);
+    this.rises.step(now);
     this.view.syncInput(this.getData());
   }
 
@@ -199,11 +211,14 @@ export class OrbChart {
     this.redrawer.begin();
   }
 
-  /** Pause animation. Bursts in flight jump to their end. */
+  /** Pause animation. Bursts and rises in flight jump to their end. */
   pause() {
     if (this.destroyed) return;
     this.playback.pause();
-    if (this.view.finishBursts(this.loop.now())) this.redrawer.run(false);
+    const risen = this.rises.finishAll();
+    if (this.view.finishBursts(this.loop.now()) || risen) {
+      this.redrawer.run(false);
+    }
   }
 
   /**
@@ -216,12 +231,23 @@ export class OrbChart {
     return !this.destroyed && this.pops.pop(id);
   }
 
+  /**
+   * Brings back the popped bubble `id`, or all popped bubbles without an
+   * `id`; each rises to its old place. Call it when your drawer closes.
+   * Returns false when nothing came back (unknown or live id, or destroyed).
+   */
+  restore(id?: string): boolean {
+    return !this.destroyed && this.pops.restore(id);
+  }
+
   /** Destroy chart instance. Safe to call more than once. */
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
     this.playback.stop();
     this.teardown.run();
+    this.rises.clear();
+    this.ledger.clear();
     this.orbs = [];
   }
 

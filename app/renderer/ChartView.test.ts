@@ -35,6 +35,8 @@ describe("ChartView", () => {
       now: jest.fn(() => 0),
       elapsed: jest.fn(() => 0),
       phaseOf: jest.fn<number, [Orb]>(() => 0),
+      riseOf: jest.fn<number, [Orb, number]>(() => 0),
+      onGateOpen: jest.fn(),
       redrawIfStopped: jest.fn(),
       onResize: jest.fn(),
     };

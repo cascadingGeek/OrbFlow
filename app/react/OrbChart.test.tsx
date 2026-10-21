@@ -95,7 +95,12 @@ describe("<OrbChart> (React)", () => {
   it("calls onOrbClick when an orb is clicked", () => {
     const onOrbClick = jest.fn();
     const { container } = render(
-      <OrbChart data={[data[0]]} minRadius={25} onOrbClick={onOrbClick} />,
+      <OrbChart
+        data={[data[0]]}
+        minRadius={25}
+        enterStyle="grow"
+        onOrbClick={onOrbClick}
+      />,
     );
     const canvas = container.querySelector("canvas") as HTMLCanvasElement;
     setElementSize(canvas, 400, 300);

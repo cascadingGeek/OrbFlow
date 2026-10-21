@@ -4,6 +4,7 @@ import { CanvasInput, type InputConfig } from "./CanvasInput";
 import { BubblePainter } from "./BubblePainter";
 import { BurstEffects, type PopSnapshot } from "./BurstEffects";
 import { CanvasRenderer, type FrameTime } from "./CanvasRenderer";
+import { EntranceGate } from "./EntranceGate";
 import { FocusCue } from "./FocusCue";
 import { ImageCache } from "./ImageCache";
 import { LiveAnnouncer } from "./LiveAnnouncer";
@@ -27,6 +28,10 @@ export interface ViewHost {
   elapsed(): number;
   /** Float wobble phase for an orb. */
   phaseOf(orb: Orb): number;
+  /** How far below its place an orb is drawn at loop clock `now`, in pixels. */
+  riseOf(orb: Orb, now: number): number;
+  /** The chart scrolled into view for the first time. */
+  onGateOpen(): void;
   /** Draws once if no loop is doing it. */
   redrawIfStopped(): void;
   /** The container changed size. */
@@ -36,7 +41,8 @@ export interface ViewHost {
 /**
  * Puts together everything the user sees and touches: the canvas with its
  * image cache and burst effects, the tooltip, the pointer input, the
- * accessible list, the live region, the focus cue, and the resize observer.
+ * accessible list, the live region, the focus cue, the entrance gate, and the
+ * resize observer.
  * If one part fails to build, the parts before it are removed again.
  */
 export class ChartView {
@@ -48,6 +54,7 @@ export class ChartView {
   private readonly input: CanvasInput;
   private readonly layer: AccessibleLayer;
   private readonly cue: FocusCue;
+  private readonly gate: EntranceGate;
   private readonly teardown = new Teardown();
 
   constructor(
@@ -65,6 +72,7 @@ export class ChartView {
         images: this.images,
         painter,
         effects: this.effects,
+        riseOf: host.riseOf,
       });
       this.teardown.add(() => this.renderer.destroy());
       this.tooltip = new TooltipView(container, getConfig);
@@ -72,14 +80,17 @@ export class ChartView {
         this.renderer.element,
         this.tooltip,
         getConfig,
-        { onActivate: host.onActivate, onCanvasMiss: host.onCanvasMiss },
+        {
+          onActivate: host.onActivate,
+          onCanvasMiss: host.onCanvasMiss,
+          centerOf: (orb) => this.centerOf(orb),
+        },
       );
       this.teardown.add(() => this.input.dispose());
       this.cue = new FocusCue({
         tooltip: this.tooltip,
         setRing: (id) => this.renderer.setFocus(id),
-        centerOf: (orb) =>
-          this.renderer.centerOf(orb, host.elapsed(), host.phaseOf(orb)),
+        centerOf: (orb) => this.centerOf(orb),
         redraw: host.redrawIfStopped,
       });
       this.layer = new AccessibleLayer(container, getConfig, {
@@ -90,6 +101,8 @@ export class ChartView {
       this.teardown.add(() => this.layer.dispose());
       this.announcer = new LiveAnnouncer(container);
       this.teardown.add(() => this.announcer.dispose());
+      this.gate = new EntranceGate(container, host.onGateOpen);
+      this.teardown.add(() => this.gate.dispose());
       const observer = new ResizeObserver(() => host.onResize());
       this.teardown.add(() => observer.disconnect());
       observer.observe(container);
@@ -111,8 +124,30 @@ export class ChartView {
       orb,
       this.host.elapsed(),
       this.host.phaseOf,
+      this.host.now(),
     );
     return { ...bubble, id: orb.id };
+  }
+
+  /** True once the chart has scrolled into view, or cannot be watched. */
+  get gateOpen(): boolean {
+    return this.gate.open;
+  }
+
+  /** Opens the gate for good without a callback (the chart paused or went still). */
+  openGate() {
+    this.gate.forceOpen();
+  }
+
+  /** Where `orb` is drawn now. Drawing, hit tests, and the cue all use it. */
+  centerOf(orb: Orb) {
+    const { host } = this;
+    return this.renderer.centerOf(
+      orb,
+      host.elapsed(),
+      host.phaseOf(orb),
+      host.now(),
+    );
   }
 
   /** Plays a burst (or, when idle, only leaves the ghost `popStyle` asks for). */
@@ -124,6 +159,11 @@ export class ChartView {
   /** Ends every burst and fades ghosts in fully. True if anything changed. */
   finishBursts(now: number): boolean {
     return this.effects.finishAll(now);
+  }
+
+  /** Removes the ghost of one bubble, because it came back. */
+  removeGhost(id: string) {
+    this.effects.removeGhost(id);
   }
 
   /** Removes every ghost. */

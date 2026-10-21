@@ -110,6 +110,30 @@ export interface OrbChartConfig extends PhysicsConfig {
    */
   onOrbPop?: (orb: Orb) => void;
   /**
+   * How new bubbles enter. `"rise"` slides them up from below the chart, once
+   * the chart has scrolled into view for the first time. `"grow"` grows them
+   * from nothing where they are. A paused or still chart, and
+   * `transitionDuration: 0`, skip both. Changing it affects only bubbles that
+   * enter later. Any other value logs a warning and falls back to `"rise"`.
+   * @default "rise"
+   */
+  enterStyle?: "rise" | "grow";
+  /**
+   * When `popOnClick` is on, whether clicking a bubble first brings back the
+   * bubbles the user popped before. Bubbles popped with `chart.pop(id)` are
+   * never brought back this way. A value that is not a boolean logs a warning
+   * and falls back to `true`.
+   * @default true
+   */
+  restoreOnNextPop?: boolean;
+  /**
+   * Called once for every bubble that comes back through `restore()` or
+   * `restoreOnNextPop`, with the new live orb. Errors thrown by the handler
+   * are caught and logged.
+   * @default a no op
+   */
+  onOrbRestore?: (orb: Orb) => void;
+  /**
    * Which bubble look to draw. `"auto"` picks `"light"` when
    * `backgroundColor` is a light color and `"dark"` otherwise (including
    * `"transparent"`, named colors, and `hsl()`, so set it yourself on a light

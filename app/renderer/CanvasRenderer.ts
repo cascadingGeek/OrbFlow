@@ -9,6 +9,8 @@ export interface RendererParts {
   images?: ImageCache;
   painter?: BubblePainter;
   effects?: BurstEffects;
+  /** How far below its place an orb is drawn at `now`, in pixels. */
+  riseOf?: (orb: Orb, now: number) => number;
 }
 
 /** The clock readings for one frame. */
@@ -32,6 +34,7 @@ export class CanvasRenderer {
   private readonly images: ImageCache;
   private readonly painter: BubblePainter;
   private readonly effects: BurstEffects;
+  private readonly riseOf: (orb: Orb, now: number) => number;
   private width: number = 0;
   private height: number = 0;
   // Still mode draws no float wobble; the focus ring follows the same offset.
@@ -47,6 +50,7 @@ export class CanvasRenderer {
     this.painter = parts.painter ?? new BubblePainter();
     this.images = parts.images ?? new ImageCache();
     this.effects = parts.effects ?? new BurstEffects(this.painter);
+    this.riseOf = parts.riseOf ?? (() => 0);
     this.updateConfig(config);
 
     // Check the context before the canvas touches the container, so a
@@ -85,9 +89,13 @@ export class CanvasRenderer {
     this.focusedId = id;
   }
 
-  /** Where `orb` is drawn: its position plus the current float offset. */
-  centerOf(orb: Orb, elapsedTime: number, phase: number) {
-    return { x: orb.x, y: orb.y + this.floatOffset(elapsedTime, phase) };
+  /**
+   * Where `orb` is drawn: its position plus the float offset and, while it
+   * rises, the rise offset at loop clock time `now`.
+   */
+  centerOf(orb: Orb, elapsedTime: number, phase: number, now = 0) {
+    const float = this.floatOffset(elapsedTime, phase);
+    return { x: orb.x, y: orb.y + float + this.riseOf(orb, now) };
   }
 
   private floatOffset(elapsedTime: number, phase: number): number {
@@ -131,21 +139,30 @@ export class CanvasRenderer {
     };
     this.effects.drawGhosts(ctx, time.now, look);
     for (const orb of orbs) {
-      this.painter.paint(ctx, this.bubbleOf(orb, time.elapsed, phaseOf), look);
+      this.painter.paint(
+        ctx,
+        this.bubbleOf(orb, time.elapsed, phaseOf, time.now),
+        look,
+      );
     }
     this.effects.drawBursts(ctx, time.now, look);
 
     // The ring goes last, so it sits on top of everything.
     const focused = orbs.find((orb) => orb.id === this.focusedId);
     if (focused) {
-      const { x, y } = this.centerOf(focused, time.elapsed, phaseOf(focused));
+      const { x, y } = this.centerOf(
+        focused,
+        time.elapsed,
+        phaseOf(focused),
+        time.now,
+      );
       this.drawFocusRing(x, y, focused.radius);
     }
   }
 
   /** What `orb` looks like right now, for drawing or for a pop snapshot. */
-  bubbleOf(orb: Orb, elapsed: number, phaseOf: (orb: Orb) => number) {
-    const { x, y } = this.centerOf(orb, elapsed, phaseOf(orb));
+  bubbleOf(orb: Orb, elapsed: number, phaseOf: (orb: Orb) => number, now = 0) {
+    const { x, y } = this.centerOf(orb, elapsed, phaseOf(orb), now);
     return {
       x,
       y,

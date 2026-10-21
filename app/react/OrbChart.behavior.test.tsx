@@ -448,6 +448,65 @@ describe("<OrbChart> behavior", () => {
       expect(updateConfig).toHaveBeenCalledWith({ theme: "dark" });
     });
 
+    it("restores through the ref, and returns false once unmounted (spec 0006 AC-13)", () => {
+      const ref = createRef<OrbChartHandle>();
+      const { unmount } = render(<OrbChart {...props()} ref={ref} />);
+      const handle = ref.current;
+      expect(handle?.restore("a")).toBe(false);
+
+      handle?.pop("a");
+      expect(handle?.restore("a")).toBe(true);
+      handle?.pop("a");
+      handle?.pop("b");
+      expect(handle?.restore()).toBe(true);
+      expect(handle?.getData().map((orb) => orb.id)).toEqual(["a", "b"]);
+      handle?.pop("a");
+      unmount();
+      expect(handle?.restore("a")).toBe(false);
+      expect(handle?.restore()).toBe(false);
+    });
+
+    it("calls the newest onOrbRestore without updating the chart", () => {
+      const first = jest.fn();
+      const second = jest.fn();
+      const ref = createRef<OrbChartHandle>();
+      const { rerender } = render(
+        <OrbChart {...props({ onOrbRestore: first })} ref={ref} />,
+      );
+      ref.current?.pop("a");
+      updateConfig.mockClear();
+
+      rerender(<OrbChart {...props({ onOrbRestore: second })} ref={ref} />);
+      ref.current?.restore("a");
+
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(updateConfig).not.toHaveBeenCalled();
+    });
+
+    it("passes enterStyle and restoreOnNextPop by value", () => {
+      const { rerender } = render(
+        <OrbChart
+          {...props({ enterStyle: "grow", restoreOnNextPop: false })}
+        />,
+      );
+      updateConfig.mockClear();
+
+      rerender(
+        <OrbChart
+          {...props({ enterStyle: "grow", restoreOnNextPop: false })}
+        />,
+      );
+      expect(updateConfig).not.toHaveBeenCalled();
+
+      rerender(
+        <OrbChart
+          {...props({ enterStyle: "rise", restoreOnNextPop: false })}
+        />,
+      );
+      expect(updateConfig).toHaveBeenCalledWith({ enterStyle: "rise" });
+    });
+
     it("pops on click when popOnClick is set", () => {
       const onOrbPop = jest.fn();
       const { container } = render(

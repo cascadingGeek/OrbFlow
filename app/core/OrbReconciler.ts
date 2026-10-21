@@ -1,6 +1,8 @@
 import type { Orb, OrbDataInput } from "../types/types";
 import type { ResolvedConfig } from "./ConfigResolver";
+import type { PopRecord } from "./PopLedger";
 import type { RadiusTweener } from "./RadiusTweener";
+import { Spawner, type Place } from "./Spawner";
 
 /** Where a new orb waits for a container that has no size yet. */
 interface PendingSpawn {
@@ -16,11 +18,15 @@ export class OrbReconciler {
   private seeds = new Map<string, number>();
   private seedCounter = 0;
   private pending = new Map<string, PendingSpawn>();
+  private readonly spawner: Spawner;
 
   constructor(
     private readonly tweener: RadiusTweener,
     private readonly random: () => number = Math.random,
-  ) {}
+    private readonly popped: () => { value: number }[] = () => [],
+  ) {
+    this.spawner = new Spawner(random);
+  }
 
   /** Float wobble phase for an orb, fixed for as long as the orb lives. */
   phaseOf(orb: Orb): number {
@@ -48,6 +54,8 @@ export class OrbReconciler {
    * Applies the accepted entries to `current` and returns the new list:
    * accepted entries in input order, then orbs that are exiting. `duration`
    * overrides the configured transition length (0 makes every change snap).
+   * With `enterStyle` `"rise"`, a new orb starts at its target radius, in the
+   * least crowded of a few random places; with `"grow"` it grows from 0.
    */
   reconcile(
     current: Orb[],
@@ -59,6 +67,7 @@ export class OrbReconciler {
     const byId = new Map(current.map((orb) => [orb.id, orb]));
     const radiusOf = this.radiusScale(accepted, config);
     const kept = new Set<string>();
+    const placed = current.filter((orb) => !this.tweener.isExiting(orb));
 
     const live = accepted.map((item, index) => {
       kept.add(item.id);
@@ -75,8 +84,11 @@ export class OrbReconciler {
         return existing;
       }
 
-      const orb = this.create(item, index, target, config);
-      this.tweener.start(orb, target, now, duration, "enter");
+      const orb = this.create(item, index, target, config, placed);
+      placed.push(orb);
+      if (config.enterStyle === "grow") {
+        this.tweener.start(orb, target, now, duration, "enter");
+      }
       return orb;
     });
 
@@ -89,7 +101,11 @@ export class OrbReconciler {
     return [...live, ...leaving];
   }
 
-  /** Points every non exiting orb at a radius from the current config. */
+  /**
+   * Points every non exiting orb at a radius from the current config. Popped
+   * bubbles still count towards the largest value, so a restore later gives
+   * the size a fresh `setData` would.
+   */
   retargetAll(
     orbs: Orb[],
     config: ResolvedConfig,
@@ -97,7 +113,7 @@ export class OrbReconciler {
     duration: number,
   ) {
     const live = orbs.filter((orb) => !this.tweener.isExiting(orb));
-    const radiusOf = this.radiusScale(live, config);
+    const radiusOf = this.radiusScale([...live, ...this.popped()], config);
     for (const orb of live) {
       this.tweener.retarget(orb, radiusOf(orb.value), now, duration);
     }
@@ -106,8 +122,7 @@ export class OrbReconciler {
   /** Gives orbs that were created in a 0 sized container their position. */
   placeAwaiting(width: number, height: number) {
     for (const { orb, radius } of this.pending.values()) {
-      orb.x = this.spawnAxis(width, radius);
-      orb.y = this.spawnAxis(height, radius);
+      Object.assign(orb, this.spawner.anywhere(width, height, radius));
     }
     this.pending.clear();
   }
@@ -126,33 +141,68 @@ export class OrbReconciler {
         : floor;
   }
 
+  /**
+   * Builds the orb a popped bubble was, at its old resting place moved back
+   * inside the chart. Its radius is the one `setData` of the same data would
+   * give: `live` and the popped records are every other bubble, the record is itself.
+   */
+  restoreOrb(record: PopRecord, config: ResolvedConfig, live: Orb[]): Orb {
+    const all = [...live, ...this.popped(), record];
+    const radiusOf = this.radiusScale(all, config);
+    const radius = radiusOf(record.value);
+    return this.make(record, radius, radius, config, (width, height) =>
+      this.spawner.clamp(record, width, height, radius),
+    );
+  }
+
   private create(
     item: OrbDataInput,
     index: number,
     target: number,
     config: ResolvedConfig,
+    others: Orb[],
+  ): Orb {
+    const color =
+      item.color ?? config.colorScheme[index % config.colorScheme.length];
+    const rise = config.enterStyle === "rise";
+    return this.make(
+      { ...item, color },
+      rise ? target : 0,
+      target,
+      config,
+      (width, height) =>
+        rise
+          ? this.spawner.leastCrowded(width, height, target, others)
+          : this.spawner.anywhere(width, height, target),
+    );
+  }
+
+  // Builds the orb with a fresh seed and a small random push. In a container
+  // with no size yet it waits to be placed.
+  private make(
+    item: OrbDataInput,
+    radius: number,
+    target: number,
+    config: ResolvedConfig,
+    choose: (width: number, height: number) => Place,
   ): Orb {
     this.seeds.set(item.id, this.seedCounter++ * 0.7);
     const sized = config.width > 0 && config.height > 0;
+    const place = sized ? choose(config.width, config.height) : { x: 0, y: 0 };
     const orb: Orb = {
       id: item.id,
       label: item.label,
       value: item.value,
-      radius: 0,
-      x: sized ? this.spawnAxis(config.width, target) : 0,
-      y: sized ? this.spawnAxis(config.height, target) : 0,
+      radius,
+      x: place.x,
+      y: place.y,
       vx: this.random() - 0.5,
       vy: this.random() - 0.5,
-      color:
-        item.color ?? config.colorScheme[index % config.colorScheme.length],
+      color: item.color,
       imageUrl: item.imageUrl,
       metadata: item.metadata,
     };
     if (!sized) this.pending.set(item.id, { orb, radius: target });
     return orb;
-  }
-
-  private spawnAxis(size: number, radius: number): number {
-    return this.random() * Math.max(0, size - radius * 2) + radius;
   }
 }

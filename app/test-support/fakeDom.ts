@@ -136,6 +136,55 @@ export function installFakeResizeObserver() {
   });
 }
 
+/** An IntersectionObserver whose callbacks the test fires by hand. */
+export class FakeIntersectionObserver {
+  static instances: FakeIntersectionObserver[] = [];
+  observed: Element[] = [];
+  disconnected = false;
+
+  constructor(
+    private readonly callback: IntersectionObserverCallback,
+    readonly options?: IntersectionObserverInit,
+  ) {
+    FakeIntersectionObserver.instances.push(this);
+  }
+
+  /** Observers that were created and not disconnected. */
+  static get live(): number {
+    return FakeIntersectionObserver.instances.filter((o) => !o.disconnected)
+      .length;
+  }
+
+  observe(target: Element) {
+    this.observed.push(target);
+  }
+
+  unobserve() {}
+
+  disconnect() {
+    this.disconnected = true;
+  }
+
+  /** Reports the container as visible (or not) to the chart. */
+  trigger(isIntersecting = true) {
+    const entry = { isIntersecting } as IntersectionObserverEntry;
+    this.callback([entry], this as unknown as IntersectionObserver);
+  }
+}
+
+/** Installs the fake and returns a function that removes it again. */
+export function installFakeIntersectionObserver() {
+  FakeIntersectionObserver.instances = [];
+  Object.defineProperty(window, "IntersectionObserver", {
+    configurable: true,
+    writable: true,
+    value: FakeIntersectionObserver,
+  });
+  return () => {
+    delete (window as { IntersectionObserver?: unknown }).IntersectionObserver;
+  };
+}
+
 /** Queues animation frames so a test can step the loop one frame at a time. */
 export function installFrameQueue() {
   let nextId = 1;

@@ -48,12 +48,18 @@ describe("CanvasInput", () => {
     jest.restoreAllMocks();
   });
 
-  const make = (orbs: Orb[] = []) => {
+  const make = (
+    orbs: Orb[] = [],
+    centerOf: (orb: Orb) => { x: number; y: number } = (orb) => ({
+      x: orb.x,
+      y: orb.y,
+    }),
+  ) => {
     const input = new CanvasInput(
       canvas,
       new TooltipView(container, () => config),
       () => config,
-      { onActivate, onCanvasMiss },
+      { onActivate, onCanvasMiss, centerOf },
     );
     input.sync(orbs);
     return input;
@@ -173,5 +179,36 @@ describe("CanvasInput", () => {
 
     expect(config.onOrbHover).toHaveBeenCalledTimes(2);
     expect(config.onOrbHover).toHaveBeenLastCalledWith(null);
+  });
+
+  describe("the drawn center (spec 0006 AC-5)", () => {
+    it("hits an orb where it is drawn, not at its resting place", () => {
+      const orb = makeOrb("a", 100, 100, 20);
+      make([orb], (o) => ({ x: o.x, y: o.y + 200 }));
+
+      dispatchMouse(canvas, "click", 100, 100);
+      expect(onActivate).not.toHaveBeenCalled();
+      expect(onCanvasMiss).toHaveBeenCalledWith(100, 100);
+
+      dispatchMouse(canvas, "click", 100, 300);
+      expect(onActivate).toHaveBeenCalledWith(orb, expect.any(MouseEvent));
+    });
+
+    it("shows the hand cursor over the drawn center only", () => {
+      make([makeOrb("a", 100, 100, 20)], (o) => ({ x: o.x, y: o.y + 200 }));
+
+      dispatchMouse(canvas, "pointermove", 100, 100);
+      expect(canvas.style.cursor).toBe("default");
+      dispatchMouse(canvas, "pointermove", 100, 300);
+      expect(canvas.style.cursor).toBe("pointer");
+    });
+
+    it("cannot reach an orb parked below the canvas with a pointer inside it", () => {
+      make([makeOrb("a", 100, 100, 20)], (o) => ({ x: o.x, y: o.y + 500 }));
+
+      for (const y of [0, 100, 299]) dispatchMouse(canvas, "click", 100, y);
+
+      expect(onActivate).not.toHaveBeenCalled();
+    });
   });
 });

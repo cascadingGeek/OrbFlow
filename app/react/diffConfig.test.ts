@@ -1,4 +1,4 @@
-import { diffConfig } from "./diffConfig";
+import { CALLBACK_KEYS, diffConfig } from "./diffConfig";
 
 describe("diffConfig", () => {
   it("returns nothing for equal values, including equal arrays", () => {
@@ -27,6 +27,25 @@ describe("diffConfig", () => {
       diffConfig({ colorScheme: ["#a"] }, { colorScheme: ["#a", "#b"] })
         .changes,
     ).toEqual({ colorScheme: ["#a", "#b"] });
+  });
+
+  it("never sends the onOrbRestore callback to updateConfig (spec 0006 AC-13)", () => {
+    expect(CALLBACK_KEYS).toContain("onOrbRestore");
+  });
+
+  it("sends enterStyle and restoreOnNextPop only when their value changed", () => {
+    expect(
+      diffConfig(
+        { enterStyle: "rise", restoreOnNextPop: true },
+        { enterStyle: "rise", restoreOnNextPop: true },
+      ).changes,
+    ).toEqual({});
+    expect(
+      diffConfig(
+        { enterStyle: "rise", restoreOnNextPop: true },
+        { enterStyle: "grow", restoreOnNextPop: false },
+      ).changes,
+    ).toEqual({ enterStyle: "grow", restoreOnNextPop: false });
   });
 
   it("notices a key that is new", () => {

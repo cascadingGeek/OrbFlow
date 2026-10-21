@@ -184,6 +184,7 @@ describe("OrbChart popping (spec 0005)", () => {
       const order: string[] = [];
       const chart = make({
         popOnClick: true,
+        restoreOnNextPop: false,
         onOrbClick: (orb) => order.push(`click ${orb.id}`),
         onOrbPop: (orb) => order.push(`pop ${orb.id}`),
       });
@@ -401,7 +402,7 @@ describe("OrbChart popping (spec 0005)", () => {
     });
 
     it("grows a popped id back in from nothing (AC-12)", () => {
-      const chart = make({ popStyle: "ghost" });
+      const chart = make({ popStyle: "ghost", enterStyle: "grow" });
       chart.pop("a");
       chart.updateConfig({ transitionDuration: 400 });
 

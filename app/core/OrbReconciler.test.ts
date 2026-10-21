@@ -201,7 +201,8 @@ describe("OrbReconciler duration override", () => {
   it("uses the configured duration when no override is given", () => {
     const tweener = new RadiusTweener();
     const reconciler = new OrbReconciler(tweener, () => 0.5);
-    const orbs = reconciler.reconcile([], [item("a")], config, 0);
+    const grow = { ...config, enterStyle: "grow" as const };
+    const orbs = reconciler.reconcile([], [item("a")], grow, 0);
 
     tweener.step(orbs, 200);
 
@@ -214,7 +215,10 @@ describe("OrbReconciler drop (spec 0005 AC-8)", () => {
   it("forgets a popped orb's seed, place, and tween", () => {
     const tweener = new RadiusTweener();
     const reconciler = new OrbReconciler(tweener, () => 0.5);
-    const config = new ConfigResolver().resolve({}, { width: 0, height: 0 });
+    const config = new ConfigResolver().resolve(
+      { enterStyle: "grow" },
+      { width: 0, height: 0 },
+    );
     const [orb] = reconciler.reconcile(
       [],
       [{ id: "a", label: "a", value: 1 }],
@@ -229,5 +233,131 @@ describe("OrbReconciler drop (spec 0005 AC-8)", () => {
     expect(reconciler.phaseOf(orb)).toBe(0);
     tweener.step([orb], 1000);
     expect(orb.radius).toBe(0);
+  });
+});
+
+describe("OrbReconciler rise and restore (spec 0006)", () => {
+  const resolve = (over = {}) =>
+    new ConfigResolver().resolve(
+      { width: 400, height: 300, maxRadius: 80, minRadius: 8, ...over },
+      { width: 0, height: 0 },
+    );
+  const item = (id: string, value = 1) => ({ id, label: id, value });
+  const record = (id: string, value: number, x = 50, y = 60) => ({
+    id,
+    label: id,
+    value,
+    x,
+    y,
+    index: 0,
+    byUser: true,
+  });
+
+  it("creates a rising orb at its target radius, and a growing one at 0 (AC-1)", () => {
+    const rise = new OrbReconciler(new RadiusTweener(), () => 0.5);
+    const grow = new OrbReconciler(new RadiusTweener(), () => 0.5);
+
+    const [r] = rise.reconcile([], [item("a")], resolve(), 0);
+    const [g] = grow.reconcile(
+      [],
+      [item("a")],
+      resolve({ enterStyle: "grow" }),
+      0,
+    );
+
+    expect(r.radius).toBe(80);
+    expect(g.radius).toBe(0);
+  });
+
+  it("places a rising orb in the least crowded of 8 random places (AC-4)", () => {
+    const first = [0.5, 0.5, 0, 0, 0, 0];
+    let n = 0;
+    const random = () => (n++ < first.length ? first[n - 1] : 0.95);
+    const reconciler = new OrbReconciler(new RadiusTweener(), random);
+    const [a] = reconciler.reconcile([], [item("a", 4)], resolve(), 0);
+    a.x = 200;
+    a.y = 150;
+    n = 0;
+
+    const [, b] = reconciler.reconcile(
+      [a],
+      [item("a", 4), item("b", 1)],
+      resolve(),
+      0,
+    );
+
+    // The first candidate sits on A; a later one is far enough to touch nothing.
+    expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeGreaterThan(
+      a.radius + b.radius,
+    );
+  });
+
+  it("counts a batch of new orbs against each other when placing them (AC-4)", () => {
+    const reconciler = new OrbReconciler(new RadiusTweener(), () => 0.5);
+
+    const orbs = reconciler.reconcile([], [item("a"), item("b")], resolve(), 0);
+
+    expect(orbs).toHaveLength(2);
+  });
+
+  it("restores an orb at its old place moved inside the chart, with a fresh seed (AC-7)", () => {
+    const reconciler = new OrbReconciler(new RadiusTweener(), () => 0.5);
+    const config = resolve();
+
+    const orb = reconciler.restoreOrb(record("a", 1, 1000, -50), config, []);
+
+    expect(orb.id).toBe("a");
+    expect({ x: orb.x, y: orb.y }).toEqual({ x: 320, y: 80 });
+    expect(orb.radius).toBe(80);
+    expect(orb.vx).toBe(0);
+    expect(reconciler.phaseOf(orb)).toBe(0);
+  });
+
+  it("gives a restored orb the radius of live plus popped values (AC-8)", () => {
+    const popped = [record("p", 4)];
+    const reconciler = new OrbReconciler(
+      new RadiusTweener(),
+      () => 0.5,
+      () => popped,
+    );
+    const live = reconciler.reconcile([], [item("a", 1)], resolve(), 0);
+
+    // Largest value is the popped 4: value 1 gets half the radius of maxRadius.
+    expect(reconciler.restoreOrb(record("b", 1), resolve(), live).radius).toBe(
+      40,
+    );
+    expect(reconciler.restoreOrb(record("p", 4), resolve(), live).radius).toBe(
+      80,
+    );
+  });
+
+  it("counts popped values when radii are retargeted, and moves only live orbs (AC-8)", () => {
+    const tweener = new RadiusTweener();
+    const popped = [{ value: 4 }];
+    const reconciler = new OrbReconciler(
+      tweener,
+      () => 0.5,
+      () => popped,
+    );
+    const live = reconciler.reconcile([], [item("a", 1)], resolve(), 0);
+    tweener.step(live, 0);
+
+    reconciler.retargetAll(live, resolve({ maxRadius: 40 }), 0, 0);
+    tweener.step(live, 1);
+
+    expect(live[0].radius).toBe(20);
+  });
+
+  it("holds a restored orb until a container with a size appears (AC-7)", () => {
+    const reconciler = new OrbReconciler(new RadiusTweener(), () => 0.5);
+    const unsized = new ConfigResolver().resolve({}, { width: 0, height: 0 });
+
+    const orb = reconciler.restoreOrb(record("a", 1), unsized, []);
+    expect(reconciler.awaiting("a")).toBe(true);
+    reconciler.placeAwaiting(400, 300);
+
+    expect(reconciler.awaiting("a")).toBe(false);
+    expect(orb.x).toBeGreaterThan(0);
+    expect(orb.y).toBeGreaterThan(0);
   });
 });

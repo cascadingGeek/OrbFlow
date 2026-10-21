@@ -16,8 +16,11 @@ import { useLatest } from "./useLatest";
  *
  * - `data` is applied with `setData` whenever its reference changes. Keep it
  *   stable (for example with `useMemo`) to avoid needless updates.
- * - Callbacks (`onOrbClick`, `onOrbHover`, `onDataIssue`, `onOrbPop`) can
+ * - Callbacks (`onOrbClick`, `onOrbHover`, `onDataIssue`, `onOrbPop`,
+ *   `onOrbRestore`) can
  *   change on every render. The newest one always runs, and a change causes no chart update.
+ * - Keep `data` stable: a new array on a parent re render calls `setData`,
+ *   which forgets the popped bubbles and brings their ids back as new ones.
  * - Config values are compared by value, and `colorScheme` item by item, so
  *   inline objects and arrays with equal values cost nothing.
  * - A config prop that becomes `undefined` (or is removed) keeps its last
@@ -61,6 +64,12 @@ export interface OrbChartHandle {
    * there is no such bubble or the chart is not mounted.
    */
   pop(id: string): boolean;
+  /**
+   * Brings back the popped bubble `id`, or all popped bubbles without an
+   * `id`, as `OrbChart.restore` does. Returns `false` when nothing came back
+   * or the chart is not mounted.
+   */
+  restore(id?: string): boolean;
 }
 
 /**
@@ -73,7 +82,14 @@ export interface OrbChartHandle {
  */
 export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
   function OrbChart({ data, className, style, ...rest }, ref) {
-    const { onOrbClick, onOrbHover, onDataIssue, onOrbPop, ...config } = rest;
+    const {
+      onOrbClick,
+      onOrbHover,
+      onDataIssue,
+      onOrbPop,
+      onOrbRestore,
+      ...config
+    } = rest;
     const containerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<OrbChartCore | null>(null);
     const unmounted = useRef(false);
@@ -85,6 +101,7 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
       onOrbHover,
       onDataIssue,
       onOrbPop,
+      onOrbRestore,
     });
 
     useImperativeHandle(
@@ -100,6 +117,7 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
         },
         getData: () => chartRef.current?.getData() ?? [],
         pop: (id) => chartRef.current?.pop(id) ?? false,
+        restore: (id) => chartRef.current?.restore(id) ?? false,
       }),
       [],
     );
@@ -114,6 +132,7 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
         onOrbHover: (orb) => callbacks.current.onOrbHover?.(orb),
         onDataIssue: (issues) => callbacks.current.onDataIssue?.(issues),
         onOrbPop: (orb) => callbacks.current.onOrbPop?.(orb),
+        onOrbRestore: (orb) => callbacks.current.onOrbRestore?.(orb),
       });
       chartRef.current = chart;
       appliedConfig.current = config;

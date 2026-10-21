@@ -217,7 +217,11 @@ describe("OrbChart lifecycle", () => {
 
     it("grows a new orb from 0 and cannot hit it until it has grown", () => {
       const onOrbClick = jest.fn();
-      const chart = new OrbChart(container, { minRadius: 30, onOrbClick });
+      const chart = new OrbChart(container, {
+        minRadius: 30,
+        enterStyle: "grow",
+        onOrbClick,
+      });
       chart.setData([row("a", 1)]);
       const [orb] = chart.getData();
       expect(orb.radius).toBe(0);
@@ -231,7 +235,10 @@ describe("OrbChart lifecycle", () => {
     });
 
     it("shrinks a removed orb out of the list, then removes it", () => {
-      const chart = new OrbChart(container, { minRadius: 30 });
+      const chart = new OrbChart(container, {
+        minRadius: 30,
+        enterStyle: "grow",
+      });
       chart.setData([row("a", 1), row("b", 1)]);
       advance(400);
 

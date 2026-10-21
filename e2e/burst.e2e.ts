@@ -80,12 +80,15 @@ test.describe("burst timeline while moving (AC-10, AC-12)", () => {
     expect(late.dash).toBe(late.clears);
   });
 
-  test("the next setData clears ghosts and a popped id grows back", async ({
+  test("the next setData clears ghosts and a popped id grows back with enterStyle grow", async ({
     page,
   }) => {
     await page.clock.runFor(1000);
     await page.evaluate(() => {
-      window.chart.updateConfig({ transitionDuration: 400 });
+      window.chart.updateConfig({
+        transitionDuration: 400,
+        enterStyle: "grow",
+      });
       window.chart.setData([
         { id: "a", label: "Alpha", value: 100 },
         { id: "b", label: "Beta", value: 50 },

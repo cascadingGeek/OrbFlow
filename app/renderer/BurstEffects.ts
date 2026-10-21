@@ -58,6 +58,11 @@ export class BurstEffects {
     this.ghosts = [];
   }
 
+  /** Removes the ghost of one popped bubble, as a restore does. */
+  removeGhost(id: string) {
+    this.ghosts = this.ghosts.filter((ghost) => ghost.snap.id !== id);
+  }
+
   /** Removes every burst and ghost. */
   clear() {
     this.bursts = [];

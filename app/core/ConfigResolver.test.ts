@@ -104,7 +104,10 @@ describe("ConfigResolver", () => {
         popStyle: "remove",
         theme: "auto",
         fontFamily: "Inter, system-ui, sans-serif",
+        enterStyle: "rise",
+        restoreOnNextPop: true,
       });
+      expect(config.onOrbRestore).toEqual(expect.any(Function));
       expect(config.onOrbPop).toEqual(expect.any(Function));
       expect(warn).not.toHaveBeenCalled();
     });
@@ -126,6 +129,9 @@ describe("ConfigResolver", () => {
       ["fontFamily", 12, "Inter, system-ui, sans-serif"],
       ["theme", "sepia", "auto"],
       ["popStyle", "explode", "remove"],
+      ["enterStyle", "fade", "rise"],
+      ["restoreOnNextPop", "yes", true],
+      ["restoreOnNextPop", 0, true],
     ] as const)(
       "falls back for a bad %s (%p) and warns once",
       (key, bad, fallback) => {
@@ -148,6 +154,12 @@ describe("ConfigResolver", () => {
       expect(resolver.merge(base, { popStyle: "ghost" }).popStyle).toBe(
         "ghost",
       );
+      expect(resolver.merge(base, { enterStyle: "grow" }).enterStyle).toBe(
+        "grow",
+      );
+      expect(
+        resolver.merge(base, { restoreOnNextPop: false }).restoreOnNextPop,
+      ).toBe(false);
       expect(resolver.merge(base, { fontFamily: "Nunito" }).fontFamily).toBe(
         "Nunito",
       );

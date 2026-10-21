@@ -27,8 +27,8 @@ const DEFAULT_COLORS = [
 /**
  * Owns the option defaults, the merge that ignores `undefined`, and the
  * checks for `transitionDuration`, `ariaLabel`, `reducedMotion`, `minRadius`,
- * `fontFamily`, `theme`, and `popStyle`. The last four warn once per bad
- * value, not on every `updateConfig`.
+ * `fontFamily`, `theme`, `popStyle`, `enterStyle`, and `restoreOnNextPop`. All
+ * but the first three warn once per bad value, not on every `updateConfig`.
  */
 export class ConfigResolver {
   private readonly warned = new Set<string>();
@@ -56,6 +56,9 @@ export class ConfigResolver {
       popOnClick: config.popOnClick ?? false,
       popStyle: this.oneOf("popStyle", config.popStyle, ["remove", "ghost"]),
       onOrbPop: config.onOrbPop ?? (() => {}),
+      enterStyle: this.oneOf("enterStyle", config.enterStyle, ["rise", "grow"]),
+      restoreOnNextPop: this.validRestore(config.restoreOnNextPop),
+      onOrbRestore: config.onOrbRestore ?? (() => {}),
       theme: this.oneOf("theme", config.theme, ["auto", "light", "dark"]),
       fontFamily: this.validFont(config.fontFamily),
       damping: config.damping,
@@ -86,7 +89,23 @@ export class ConfigResolver {
       "remove",
       "ghost",
     ]);
+    merged.enterStyle = this.oneOf("enterStyle", merged.enterStyle, [
+      "rise",
+      "grow",
+    ]);
+    merged.restoreOnNextPop = this.validRestore(merged.restoreOnNextPop);
     return merged;
+  }
+
+  private validRestore(value: unknown): boolean {
+    if (value === undefined) return true;
+    if (typeof value === "boolean") return value;
+    this.warnOnce(
+      "restoreOnNextPop",
+      value,
+      "restoreOnNextPop must be true or false, using true.",
+    );
+    return true;
   }
 
   private validMinRadius(value: unknown): number {

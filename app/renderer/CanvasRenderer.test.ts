@@ -291,6 +291,40 @@ describe("CanvasRenderer", () => {
       });
     });
 
+    it("adds the rise offset to where an orb is drawn, at the time given (spec 0006 AC-5)", () => {
+      const riseOf = jest.fn((_orb: Orb, now: number) => 200 - now);
+      const renderer = new CanvasRenderer(
+        container,
+        { floatAmplitude: 0 },
+        { riseOf },
+      );
+      const orb = makeOrb();
+
+      expect(renderer.centerOf(orb, 0, 0, 50)).toEqual({ x: 100, y: 250 });
+      expect(riseOf).toHaveBeenLastCalledWith(orb, 50);
+      expect(renderer.centerOf(orb, 0, 0, 200).y).toBe(100);
+      expect(renderer.bubbleOf(orb, 0, () => 0, 50).y).toBe(250);
+    });
+
+    it("draws the frame at the frame time, so a rising bubble is drawn lower (spec 0006 AC-2)", () => {
+      const renderer = new CanvasRenderer(
+        container,
+        { floatAmplitude: 0 },
+        { riseOf: (_orb, now) => (now === 0 ? 300 : 0) },
+      );
+      renderer.updateDimensions(400, 300);
+      const orb = makeOrb();
+      contexts[0].calls.length = 0;
+      renderer.render([orb], { now: 0, elapsed: 0, moving: true });
+      const parked = contexts[0].calls.filter((c) => c.method === "arc");
+      contexts[0].calls.length = 0;
+      renderer.render([orb], { now: 800, elapsed: 800, moving: true });
+      const risen = contexts[0].calls.filter((c) => c.method === "arc");
+
+      expect(parked[0].args[1]).toBe(400);
+      expect(risen[0].args[1]).toBe(100);
+    });
+
     it("draws a two tone ring last, only for the focused orb", () => {
       const renderer = new CanvasRenderer(container, { floatAmplitude: 0 });
       const orbs = [makeOrb({ id: "a" }), makeOrb({ id: "b", x: 200 })];

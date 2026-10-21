@@ -70,3 +70,16 @@ The other decisions follow from the adoption goal. Shipping ESM and CommonJS avo
 **Decision**: option 1, chosen by the engineer. The size still sits far below what most chart libraries ship, the extra weight buys real accessibility, and the review habit the follow up asked for (raise it in this spec, never quietly) is what this section is.
 
 **Tradeoff**: the room left is small (about 0.3 kB in core), so feature 7 will meet the same question again unless it measures first and stays inside.
+
+## Revision: React budget after the spec 0006 review fixes (2026-10-21)
+
+**Context**: Spec 0006 landed inside 15 / 15 / 15 kB with React at 14.91 kB. Its review fixes then added real behavior: React is 15033 B against 15000 B. Core (14442 B) and cdn (14504 B) are inside.
+
+**Options considered**:
+1. Raise only the React budget to 16 kB. Restores the rule that React is core plus 1 kB, keeps the fixes, and leaves core and cdn strict.
+2. Raise all three to 16 kB. Simpler to state, but loosens two budgets that are not breached.
+3. Cut about 35 B of behavior. Measured: merging duplicate code saves nothing after gzip, and the one real cut (skipping the empty list early return in the spawner) saves 10 B.
+
+**Decision**: option 1, chosen by the engineer on the recommendation. The over run is 33 B, caused by fixes the review asked for, and cutting behavior for it would trade correctness for bytes.
+
+**Tradeoff**: the cdn file has only about 0.5 kB left, so feature 7 meets the same question again unless it measures first and stays inside.

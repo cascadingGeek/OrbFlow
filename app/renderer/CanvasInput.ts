@@ -15,6 +15,8 @@ export interface InputHooks {
   onActivate(orb: Orb, event: MouseEvent): void;
   /** A click or tap missed every orb, in canvas pixels. */
   onCanvasMiss(x: number, y: number): void;
+  /** Where `orb` is drawn now: its place, float wobble, and rise offset. */
+  centerOf(orb: Orb): { x: number; y: number };
 }
 
 /**
@@ -152,12 +154,13 @@ export class CanvasInput {
 
   private hit(x: number, y: number): Orb | null {
     // Canvas context was scaled by DPR, so use CSS pixel coordinates directly.
-    // Reverse draw order, so the orb on top wins.
+    // Reverse draw order, so the orb on top wins. The hit area is where the
+    // orb is drawn, so a rising orb is hit where it is seen.
     for (let i = this.liveOrbs.length - 1; i >= 0; i--) {
       const orb = this.liveOrbs[i];
-      if (orb.radius > 0 && Math.hypot(x - orb.x, y - orb.y) <= orb.radius) {
-        return orb;
-      }
+      if (orb.radius <= 0) continue;
+      const center = this.hooks.centerOf(orb);
+      if (Math.hypot(x - center.x, y - center.y) <= orb.radius) return orb;
     }
     return null;
   }

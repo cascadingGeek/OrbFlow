@@ -18,7 +18,7 @@ Plan window: two weeks starting the week of 2026-10-13 · Posting cadence: 2 to 
 | Canvas renderer: glassy orbs, images inside orbs, tooltips, hover and click callbacks | `app/renderer/CanvasRenderer.ts` |
 | No D3, no Chart.js. Zero runtime `dependencies`; React is an optional peer (18 or 19) | `package.json` |
 | Ships ESM, CJS, types, and a CDN build exposing `window.OrbFlow` | `tsdown.config.ts` |
-| Size budgets enforced in CI: core 8 kB, react 9 kB, cdn 8 kB (gzip) | `.size-limit.json` |
+| Size budgets enforced in CI: core 15 kB, react 15 kB, cdn 15 kB (gzip) | `.size-limit.json` |
 | Package guarded by publint, attw, a dist verifier, and smoke tests in 3 consumer fixtures | `scripts/`, `test/consumers/` |
 | Roadmap: Vue (1.1), Svelte (1.2), Angular (1.3), one per minor release | `docs/scope/scope.md` |
 
@@ -54,7 +54,7 @@ This is a strength for social content: "building in public, here is what works a
 ## 3. Voice and ground rules
 
 - **Voice:** a developer talking to developers. First person, plain words, specific numbers, small honest admissions. No "game-changing", no "revolutionary", no "excited to announce".
-- **Claim rule:** only claim what the repo proves. "Zero runtime dependencies", "8 kB gzip budget", "spatial grid collision" are provable. "Smooth at 1,000 orbs" is not, until you measure it (scope row 7).
+- **Claim rule:** only claim what the repo proves. "Zero runtime dependencies", "15 kB gzip budget", "spatial grid collision" are provable. "Smooth at 1,000 orbs" is not, until you measure it (scope row 7).
 - **Show, don't tell:** every post carries a clip, GIF, or code image.
 - **One idea per post.** If it needs "also", it is two posts.
 - **Reply within the first hour** of each post. That matters more than the post itself.

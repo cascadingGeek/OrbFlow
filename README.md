@@ -21,7 +21,7 @@ A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas
 **Data**
 
 - Bubble area follows each item's `value`: a value twice as big gets a bubble with twice the area. `minRadius` keeps tiny values visible.
-- Updates are smooth: `setData` matches bubbles by `id`, so existing bubbles keep their place and animate to their new size, new ones grow in, and removed ones shrink out.
+- Updates are smooth: `setData` matches bubbles by `id`, so existing bubbles keep their place and animate to their new size, new ones rise in from below, and removed ones shrink out.
 - Bad entries (a missing, empty, or duplicate `id`, a label that is not a string, or a value that is not a number of 0 or more) are skipped and reported to you, never thrown.
 - Optional image inside each bubble, plus a color per bubble or a palette for the rest.
 
@@ -30,6 +30,8 @@ A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas
 - Built in tooltip on hover, on tap (touch), and on keyboard focus.
 - `onOrbClick` and `onOrbHover` callbacks, so you can show your own details card or drawer.
 - Pop a bubble with `chart.pop(id)`, or let users pop them with `popOnClick`. It bursts into droplets, and can leave a dashed ghost behind.
+- Bring popped bubbles back with `chart.restore()`, for example when your details drawer closes. They rise to their old place.
+- Bubbles rise from the bottom edge when the chart first scrolls into view, and when new ones are added.
 - The hand cursor shows only over a bubble.
 - Works with mouse, pen, and touch (Pointer Events).
 
@@ -46,7 +48,7 @@ A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas
 - Works with vanilla JavaScript and React 18 or 19, including server rendered React and strict mode.
 - Fills its container and redraws on resize, with sharp drawing on high density screens.
 - `destroy()` removes every listener, observer, and element, and is safe to call twice.
-- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 12 kB gzip.
+- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 14 kB gzip.
 
 ## Installation
 
@@ -119,7 +121,7 @@ function App() {
 
 **Server rendering.** The component renders an empty `div` on the server and creates the canvas after mount. In the Next.js App Router, render it from a Client Component (a file that starts with `"use client"`) when you pass callbacks.
 
-**Controlling the chart from React.** A ref gives you `start()`, `pause()`, `getData()`, and `pop(id)`:
+**Controlling the chart from React.** A ref gives you `start()`, `pause()`, `getData()`, `pop(id)`, and `restore(id?)`:
 
 ```tsx
 import { useRef } from "react";
@@ -195,19 +197,42 @@ chart.pop("btc"); // true if "btc" was a live bubble, false otherwise
 - Ghosts are not clickable. The next `setData` clears them, and an id that comes back in the data grows in again as a new bubble. Your data is the source of truth.
 - Screen readers hear "&lt;label&gt; popped" through a polite live region.
 
+### Bringing bubbles back
+
+```javascript
+const chart = new OrbChart("#chart", {
+  popOnClick: true,
+  onOrbClick: (orb) => openDrawer(orb), // your own details view
+  onOrbRestore: (orb) => console.log(`${orb.label} is back`),
+});
+
+closeDrawerButton.onclick = () => chart.restore(); // every popped bubble rises back
+chart.restore("btc"); // true if "btc" was popped and is not live, false otherwise
+```
+
+- A restored bubble rises from below the chart to the place it had, for both `popStyle` values. It is a normal bubble again, so it can be popped again.
+- With `popOnClick`, clicking another bubble brings back the one the user popped before (`restoreOnNextPop`, on by default). Bubbles popped with `chart.pop(id)` from code are never brought back this way.
+- The next `setData` forgets every popped bubble, because your data is the source of truth. In React, pass a stable `data` (from `useMemo` or state): a new array on every render calls `setData`.
+- Screen readers hear "&lt;label&gt; restored", or "3 bubbles restored" for a batch.
+
+### Entering bubbles
+
+New bubbles rise from below the bottom edge, in a loose stagger, once the chart first scrolls into view. Set `enterStyle: "grow"` for the older grow in. A paused or still chart, and `transitionDuration: 0`, show bubbles in place with no motion.
+
 ## API reference
 
 ### `new OrbChart(container, config?)`
 
-| Method                  | What it does                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `setData(data)`         | Loads or updates data. Bubbles are matched by `id`. Starts the animation the first time. Clears ghosts.                         |
-| `pop(id)`               | Bursts the live bubble `id`. Returns `false` for an unknown id, a bubble already popped or shrinking out, or after `destroy()`. |
-| `updateConfig(partial)` | Changes options. Keys set to `undefined` are ignored.                                                                           |
-| `start()`               | Starts or resumes the animation.                                                                                                |
-| `pause()`               | Pauses the animation. A paused chart stays paused when data or options change, and shows the change as one still frame.         |
-| `getData()`             | The current bubbles (`Orb[]`), without the ones shrinking out. Treat them as read only.                                         |
-| `destroy()`             | Removes the chart and everything it added. Safe to call more than once.                                                         |
+| Method                  | What it does                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `setData(data)`         | Loads or updates data. Bubbles are matched by `id`. Starts the animation the first time. Clears ghosts.                                 |
+| `pop(id)`               | Bursts the live bubble `id`. Returns `false` for an unknown id, a bubble already popped or shrinking out, or after `destroy()`.         |
+| `restore(id?)`          | Brings back the popped bubble `id`, or every popped bubble without an `id`. Returns `false` if nothing came back, or after `destroy()`. |
+| `updateConfig(partial)` | Changes options. Keys set to `undefined` are ignored.                                                                                   |
+| `start()`               | Starts or resumes the animation.                                                                                                        |
+| `pause()`               | Pauses the animation. A paused chart stays paused when data or options change, and shows the change as one still frame.                 |
+| `getData()`             | The current bubbles (`Orb[]`), without the ones shrinking out. Treat them as read only.                                                 |
+| `destroy()`             | Removes the chart and everything it added. Safe to call more than once.                                                                 |
 
 ### Options (`OrbChartConfig`)
 
@@ -230,7 +255,10 @@ The React component takes the same options as props.
 | `popOnClick`         | boolean                         | `false`                          | Click, tap, Enter, or Space pops a bubble, after `onOrbClick` runs.                                        |
 | `popStyle`           | `"remove" \| "ghost"`           | `"remove"`                       | What a popped bubble leaves behind: nothing, or a dashed ghost until the next `setData`.                   |
 | `onOrbPop`           | `(orb) => void`                 | none                             | Runs once for every bubble that pops, with the orb as it was.                                              |
-| `transitionDuration` | number                          | `400`                            | Length in milliseconds of grow, shrink, and resize animations. `0` snaps instantly.                        |
+| `enterStyle`         | `"rise" \| "grow"`              | `"rise"`                         | How new bubbles enter: rise from below once the chart is seen, or grow from nothing.                       |
+| `restoreOnNextPop`   | boolean                         | `true`                           | With `popOnClick`, a click first brings back the bubbles the user popped before.                           |
+| `onOrbRestore`       | `(orb) => void`                 | none                             | Runs once for every bubble that comes back, with the new live orb.                                         |
+| `transitionDuration` | number                          | `400`                            | Length in milliseconds of grow, shrink, and resize animations (a rise lasts twice as long). `0` snaps.     |
 | `ariaLabel`          | string                          | `"Bubble chart"`                 | The chart's accessible name.                                                                               |
 | `ariaDescription`    | string                          | none                             | A longer description for screen readers. Pass `""` to clear it.                                            |
 | `reducedMotion`      | `"auto" \| "always" \| "never"` | `"auto"`                         | `"auto"` follows the system setting, `"always"` keeps bubbles still, `"never"` keeps them moving.          |
@@ -279,6 +307,9 @@ All exports are named; there is no default export.
 - `theme: "auto"` treats `"transparent"`, named colors (like `"white"`), and `hsl()` as dark. On a light page behind a transparent chart, set `theme: "light"`.
 - Labels look best in a rounded font, but the chart cannot load fonts. Load one on your page and pass it as `fontFamily`.
 - The soap film and crescent are canvas approximations of the design and do not match it pixel for pixel. Browsers without `createConicGradient` skip the film.
+- Popped bubbles are remembered until the next `setData` or `destroy()`, with no time limit.
+- Bubbles still collide at their resting place while they rise, so a neighbor can be nudged by a bubble you cannot see yet. New bubbles pick the least crowded of a few random places to keep this small.
+- The chart keeps running while it is off screen. Pausing it there is planned.
 - Each bubble draws about ten gradients per frame. Very large charts may drop frames; a faster drawing cache is planned.
 
 ## Browser support

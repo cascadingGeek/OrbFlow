@@ -332,7 +332,10 @@ describe("OrbChart (vanilla)", () => {
     });
 
     it("shows a metadata category in the tooltip as text, never as HTML", () => {
-      const chart = new OrbChart(container, { minRadius: 25 });
+      const chart = new OrbChart(container, {
+        minRadius: 25,
+        enterStyle: "grow",
+      });
       chart.setData([
         {
           id: "x",

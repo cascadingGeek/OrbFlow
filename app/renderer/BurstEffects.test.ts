@@ -167,6 +167,21 @@ describe("BurstEffects (AC-10, AC-12)", () => {
       expect(fake.calls).toHaveLength(0);
     });
 
+    it("removes only the ghost of the restored bubble (spec 0006 AC-7)", () => {
+      effects.add(snap, 1000, true, true);
+      effects.add({ ...snap, id: "b", x: 200 }, 1000, true, true);
+
+      effects.removeGhost("a");
+      drawGhosts(2000);
+
+      expect(dashed()).toHaveLength(1);
+      expect(painter.label.mock.calls).toHaveLength(1);
+      expect(painter.label.mock.calls[0][1].id).toBe("b");
+      effects.removeGhost("zzz");
+      drawGhosts(2000);
+      expect(dashed()).toHaveLength(1);
+    });
+
     it("clears ghosts, and clear() drops everything", () => {
       effects.add(snap, 1000, true, false);
       effects.clearGhosts();

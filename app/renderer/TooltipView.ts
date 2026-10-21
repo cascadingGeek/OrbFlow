@@ -71,6 +71,10 @@ export class TooltipView {
     if (height !== undefined && top + rect.height > height)
       top -= rect.height + 20;
 
+    // A bubble below the canvas (still parked) gets a tooltip inside it.
+    if (width !== undefined) left = clamp(left, width - rect.width);
+    if (height !== undefined) top = clamp(top, height - rect.height);
+
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
     tip.style.opacity = "1";
@@ -151,4 +155,8 @@ export class TooltipView {
     this.container.appendChild(tip);
     return tip;
   }
+}
+
+function clamp(value: number, max: number): number {
+  return Math.min(Math.max(0, value), Math.max(0, max));
 }

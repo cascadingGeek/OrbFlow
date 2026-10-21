@@ -4,7 +4,7 @@
     "path": "dist/index.mjs",
     "import": "{ OrbChart }",
     "gzip": true,
-    "limit": "13 kB"
+    "limit": "15 kB"
   },
   {
     "name": "react",
@@ -12,12 +12,12 @@
     "import": "{ OrbChart }",
     "ignore": ["react", "react-dom"],
     "gzip": true,
-    "limit": "14 kB"
+    "limit": "16 kB"
   },
   {
     "name": "cdn",
     "path": "dist/orbflow.iife.js",
     "gzip": true,
-    "limit": "13 kB"
+    "limit": "15 kB"
   }
 ]

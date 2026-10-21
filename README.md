@@ -48,7 +48,7 @@ A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas
 - Works with vanilla JavaScript and React 18 or 19, including server rendered React and strict mode.
 - Fills its container and redraws on resize, with sharp drawing on high density screens.
 - `destroy()` removes every listener, observer, and element, and is safe to call twice.
-- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 12 kB gzip.
+- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 14 kB gzip.
 
 ## Installation
 

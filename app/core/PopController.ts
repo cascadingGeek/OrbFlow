@@ -21,7 +21,10 @@ export interface PopHost {
   push(x: number, y: number, reach: number, strength: number): void;
   /** True while the chart is paused or still. */
   idle(): boolean;
-  /** Draws one frame of an idle chart; `settle` lets a still chart settle first. */
+  /**
+   * Draws one frame of an idle chart. `settle` lets a still chart settle
+   * first; a paused chart never settles.
+   */
   redraw(settle?: boolean): void;
   /** The options popping and restoring read. */
   config(): Pick<
@@ -38,8 +41,11 @@ export interface PopHost {
   rebuild(record: PopRecord): Orb;
   /** Removes the ghost a popped bubble left, if any. */
   clearGhost(id: string): void;
-  /** Syncs input and the hidden list, then starts the orbs' rise. */
-  arrive(orbs: Orb[]): void;
+  /**
+   * Syncs input and the hidden list, then starts the orbs' rise. An idle chart
+   * is drawn once unless `draw` is false (the caller draws afterwards).
+   */
+  arrive(orbs: Orb[], draw?: boolean): void;
 }
 
 const name = (orb: Orb) => orb.label || orb.id;
@@ -67,7 +73,7 @@ export class PopController {
   restore(id?: string): boolean {
     const { ledger } = this.host;
     const found = id === undefined ? ledger.all() : [ledger.get(id)];
-    const orbs = this.bring(found);
+    const orbs = this.bring(found, true);
     if (orbs.length === 0) return false;
     this.host.announce(this.restoredText(orbs));
     this.notify(orbs);
@@ -84,10 +90,12 @@ export class PopController {
     config.onOrbClick(orb, event);
     if (!config.popOnClick) return;
     const back = config.restoreOnNextPop
-      ? this.bring(host.ledger.byUser())
+      ? this.bring(host.ledger.byUser(), false)
       : [];
     this.notify(back);
-    const popped = this.popOne(orb.id, true);
+    const popped = this.popOne(orb.id, true, back.length > 0);
+    // An idle chart gets one draw per activation: the pop drew it, or this does.
+    if (!popped && back.length > 0 && host.idle()) host.redraw(true);
     const parts = [];
     if (back.length > 0) parts.push(this.restoredText(back));
     if (popped) parts.push(`${name(popped)} popped`);
@@ -95,7 +103,8 @@ export class PopController {
   }
 
   // Pops without announcing, so a caller can compose one message.
-  private popOne(id: string, byUser: boolean): Orb | null {
+  // `settle` lets an idle still chart settle in the draw, after a restore.
+  private popOne(id: string, byUser: boolean, settle = false): Orb | null {
     const { host } = this;
     const orb = host.live(id);
     if (!orb) return null;
@@ -123,22 +132,23 @@ export class PopController {
     if (snapshot && !idle) {
       host.push(snapshot.x, snapshot.y, snapshot.r + 150, 1);
     }
-    if (idle) host.redraw();
+    if (idle) host.redraw(settle);
     return orb;
   }
 
   // Rebuilds the bubbles last popped first, so records that shared a list
   // position end up in their old order. Skips ids that are live again.
-  private bring(records: (PopRecord | undefined)[]): Orb[] {
+  // `draw` is false when the caller draws an idle chart itself afterwards.
+  private bring(records: (PopRecord | undefined)[], draw: boolean): Orb[] {
     const { host } = this;
     const orbs: Orb[] = [];
-    for (const record of records.reverse()) {
+    for (const record of [...records].reverse()) {
       if (!record || host.live(record.id)) continue;
       host.ledger.take(record.id);
       host.clearGhost(record.id);
       orbs.push(host.rebuild(record));
     }
-    if (orbs.length > 0) host.arrive(orbs);
+    if (orbs.length > 0) host.arrive(orbs, draw);
     return orbs;
   }
 

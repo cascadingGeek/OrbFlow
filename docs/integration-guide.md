@@ -566,7 +566,7 @@ useEffect(() => {
 ```
 
 - Keep `data` stable in React, so you do not send a `setData` on every render.
-- Bundle size is about 12 kB gzip for the core and about 13 kB for the React entry, with zero runtime dependencies.
+- Bundle size is about 14 kB gzip for the core and about 15 kB for the React entry, with zero runtime dependencies.
 
 ---
 

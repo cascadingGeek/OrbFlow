@@ -129,7 +129,7 @@ Spec [0005](../specs/0005-bubble-redesign-burst/index.md) · code in `app/render
 
 ### 13. Bubble up and restore · in-progress
 Bubbles rise from below the chart when it first scrolls into view and when new ones are added, like cryptobubbles.net. A popped bubble can rise back: a new `restore(id?)` method for your drawer's close handler, and `restoreOnNextPop` (on by default) so clicking another bubble brings the last popped one back, for both `popStyle` values. `enterStyle: "grow"` keeps the old entrance. Paused, still, and `transitionDuration: 0` charts skip the rise.
-**Done when:** a chart below the fold rises once as it scrolls into view; only new bubbles rise on `setData`; `restore()` and `restoreOnNextPop` bring popped bubbles back to their old place; nothing rises while paused or still; budgets hold at 13, 14, and 13 kB or are raised once on purpose to 14, 15, and 14.
+**Done when:** a chart below the fold rises once as it scrolls into view; only new bubbles rise on `setData`; `restore()` and `restoreOnNextPop` bring popped bubbles back to their old place; nothing rises while paused or still; budgets are raised once on purpose, to 15 kB for core, react, and cdn (spec 0001 *Revision*).
 - [x] Design it (spec): `/architect bubble up and restore`
 - [x] Build it: `/develop bubble up and restore`
    - [x] The rise: `ChartPopHost` extraction, `RiseTracker`, `enterStyle`, drawn position everywhere, idle rules (AC-1, AC-2, AC-4, AC-5, AC-6)

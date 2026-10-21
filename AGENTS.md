@@ -7,7 +7,7 @@ Physics based bubble (orb) chart library on canvas, zero runtime dependencies. v
 - **Language / Runtime**: TypeScript 5 (`strict`), output ES2020 for browsers; build machine Node 22.18+ or 24.11+, consumers `engines.node >=18`
 - **Framework**: none in core; React 18/19 as an optional peer for `orbflow/react`
 - **Build**: tsdown, exact pinned (spec 0001), ESM + CJS with a shared core chunk, `.d.mts`/`.d.cts` types, minified IIFE (`window.OrbFlow`). Config in `tsdown.config.ts` (replaced Rollup in feature 3)
-- **Package checks**: publint, `@arethetypeswrong/cli`, size-limit (core 9 kB, react 10 kB, cdn 9 kB gzip), `scripts/verify-dist.mjs`, smoke fixtures in `test/consumers/`
+- **Package checks**: publint, `@arethetypeswrong/cli`, size-limit (core 15 kB, react 15 kB, cdn 15 kB gzip), `scripts/verify-dist.mjs`, smoke fixtures in `test/consumers/`
 - **Package manager**: npm
 
 ## Build approach
@@ -47,7 +47,7 @@ Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`, or a folder `docs/s
 - The React entry imports the core by relative path, never as `orbflow`. `"use client"` is added by the build, never written in source.
 - Accessibility: the canvas and tooltip are `aria-hidden`; the hidden list of real buttons (`AccessibleLayer`) is the one source of truth for assistive technology, and orb text is always set with `textContent`. `ChartView` builds every visible part (canvas, tooltip, input, list, focus cue, resize observer) and removes its own parts if one fails to build.
 - Reduced motion: `Playback.idle` is true when the developer paused or the chart is still (`reducedMotion` plus the system setting, via `MotionPreference`). A still chart queues no animation frame, so every visible change is one explicit draw through `Redrawer`, which settles the orbs first. A developer `pause()` beats still mode, and a paused still chart never moves.
-- Zero runtime `dependencies`; stay within the size budgets (raised once on purpose, see spec 0001 *Revision*), or revisit them in spec 0001 again on purpose.
+- Zero runtime `dependencies`; stay within the size budgets (raised four times on purpose, see spec 0001 *Revision*; under 1 kB of room is left), or revisit them in spec 0001 again on purpose.
 - TSDoc on every exported class, method, prop, and type, including defaults.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`).
 

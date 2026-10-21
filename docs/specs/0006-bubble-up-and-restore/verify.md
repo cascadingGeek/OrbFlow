@@ -19,7 +19,7 @@ _Steps derived from spec 0006 acceptance criteria. `/check verify` runs these; `
 ## Commands
 - [x] `npm test` → all suites pass → AC-1 to AC-15
 - [x] `npm run lint` and `npm run format:check` → clean → AC-14
-- [ ] `npm run typecheck` → clean. Blocked here by a stray `node_modules/@types/prop-types 2` folder that fails the same way without this change; remove it and run again → AC-14
+- [x] `npm run typecheck` → clean (after removing a stray iCloud copy `node_modules/@types/prop-types 2` and fixing three type errors) → AC-14
 - [x] `npm run build && npm run check:package && npm run size` → green, export keys unchanged, 15/15/15 kB budgets hold (core 14.32, react 14.91, cdn 14.38) → AC-14, AC-16
 - [x] `npm run smoke` and `ORBFLOW_REACT_MAJOR=19 npm run smoke` → fixtures compile `enterStyle`, `restoreOnNextPop`, `onOrbRestore`, and `restore` from both entries → AC-14
 - [x] Count lines of the new classes, `CanvasRenderer.ts`, and `OrbChart.ts` → each new class under 200, `CanvasRenderer.ts` 195, `OrbChart.ts` 285 → AC-16

@@ -267,6 +267,8 @@ export class OrbChart {
       this.handleResize();
     }
 
+    // Bubbles parked for the scroll gate show up if the rise is turned off.
+    this.rises.settleParked();
     const now = this.loop.now();
     const radiiChanged =
       this.config.minRadius !== previous.minRadius ||

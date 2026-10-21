@@ -238,6 +238,27 @@ describe("OrbChart rise (spec 0006)", () => {
       expect(top).toBeLessThan(300);
     });
 
+    it("places parked bubbles at once when updateConfig turns the rise off", () => {
+      withGate();
+      const chart = make();
+      chart.setData([row("a")]);
+      expect(drawnFrom(() => advance(1))).toBeGreaterThanOrEqual(300);
+
+      chart.updateConfig({ enterStyle: "grow" });
+
+      expect(drawnFrom(() => advance(1))).toBeLessThan(300);
+    });
+
+    it("places parked bubbles at once when updateConfig sets transitionDuration 0", () => {
+      withGate();
+      const chart = make();
+      chart.setData([row("a")]);
+
+      chart.updateConfig({ transitionDuration: 0 });
+
+      expect(drawnFrom(() => advance(1))).toBeLessThan(300);
+    });
+
     it("places parked bubbles at once and opens for good when the chart pauses", () => {
       withGate();
       const chart = make();

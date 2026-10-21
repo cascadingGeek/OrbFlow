@@ -77,6 +77,23 @@ export class RiseTracker {
     return false;
   }
 
+  /**
+   * Lets parked bubbles take their place at once when the options no longer
+   * ask for a rise (`transitionDuration` 0 or `enterStyle` "grow"). True if
+   * any were parked.
+   */
+  settleParked(): boolean {
+    const { transitionDuration, enterStyle } = this.settings.config();
+    if (transitionDuration > 0 && enterStyle === "rise") return false;
+    let any = false;
+    for (const [id, rise] of this.rises) {
+      if (!rise.parked) continue;
+      this.rises.delete(id);
+      any = true;
+    }
+    return any;
+  }
+
   /** Starts every parked bubble at `now`, as one batch. */
   release(now: number) {
     const ids = [...this.rises].filter(([, rise]) => rise.parked);

@@ -58,7 +58,10 @@ function makeHost(initial: Orb[], idle = false) {
       return back;
     },
     clearGhost: (id) => calls.push(`clearGhost ${id}`),
-    arrive: (orbs) => calls.push(`arrive ${orbs.map((o) => o.id).join(",")}`),
+    arrive: (orbs, draw = true) =>
+      calls.push(
+        `arrive ${orbs.map((o) => o.id).join(",")}${draw ? "" : " nodraw"}`,
+      ),
   };
   return { host, calls, config, ledger, ids: () => live.map((o) => o.id) };
 }
@@ -180,7 +183,7 @@ describe("PopController (spec 0006)", () => {
         "onOrbClick",
         "clearGhost a",
         "rebuild a",
-        "arrive a",
+        "arrive a nodraw",
         "onOrbRestore a",
         "remove b",
         "onOrbPop b",
@@ -242,12 +245,26 @@ describe("PopController (spec 0006)", () => {
     });
   });
 
+  it("draws an idle chart once when an activation restores and pops (AC-6)", () => {
+    const { host, calls } = makeHost([orb("a"), orb("b")], true);
+    const pops = new PopController(host);
+    pops.activate(orb("a"), click);
+    calls.length = 0;
+
+    pops.activate(host.live("b") as Orb, click);
+
+    expect(calls).toContain("arrive a nodraw");
+    expect(calls.filter((c) => c.startsWith("redraw"))).toEqual([
+      "redraw true",
+    ]);
+  });
+
   it("redraws an idle chart after a pop, and plays no push (AC-6)", () => {
     const { host, calls } = makeHost([orb("a")], true);
 
     new PopController(host).pop("a");
 
-    expect(calls).toContain("redraw undefined");
+    expect(calls).toContain("redraw false");
     expect(calls).not.toContain("push");
   });
 });

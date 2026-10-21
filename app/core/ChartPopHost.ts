@@ -82,7 +82,7 @@ export class ChartPopHost implements PopHost {
   }
 
   redraw(settle = false) {
-    this.parts.redraw(settle);
+    this.parts.redraw(settle && !this.parts.playback.paused);
   }
 
   config() {
@@ -102,7 +102,7 @@ export class ChartPopHost implements PopHost {
     this.parts.view.removeGhost(id);
   }
 
-  arrive(orbs: Orb[]) {
+  arrive(orbs: Orb[], draw = true) {
     const { view, rises, now } = this.parts;
     const live = this.parts.orbs.live();
     view.syncInput(live);
@@ -111,6 +111,6 @@ export class ChartPopHost implements PopHost {
     rises.start(orbs, now());
     // An idle chart shows the bubble in place with one draw.
     // A still chart settles after it, a paused chart never moves.
-    if (this.idle()) this.redraw(!this.parts.playback.paused);
+    if (draw && this.idle()) this.redraw(true);
   }
 }

@@ -238,35 +238,37 @@ New bubbles rise from below the bottom edge, in a loose stagger, once the chart 
 
 The React component takes the same options as props.
 
-| Option               | Type                            | Default                          | Description                                                                                                |
-| -------------------- | ------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `width`              | number                          | container width                  | Starting width in pixels. The chart then follows its container's size.                                     |
-| `height`             | number                          | container height                 | Starting height in pixels. The chart then follows its container's size.                                    |
-| `backgroundColor`    | string                          | `"#0a0e1a"`                      | Canvas background color. `"transparent"` shows the page behind the chart.                                  |
-| `theme`              | `"auto" \| "light" \| "dark"`   | `"auto"`                         | Bubble look. `"auto"` is light when `backgroundColor` is a light hex or `rgb()` color, dark otherwise.     |
-| `fontFamily`         | string                          | `"Inter, system-ui, sans-serif"` | Font for bubble labels. Load the font on your page first; the chart does not load fonts.                   |
-| `minRadius`          | number                          | `8`                              | The smallest radius in pixels, a floor so tiny values stay visible. Area follows value above it.           |
-| `maxRadius`          | number                          | `80`                             | Radius of the bubble with the largest value, in pixels.                                                    |
-| `colorScheme`        | string[]                        | 8 blues, cyans, and purples      | Colors used, in order, for bubbles without their own `color`. Use hex or `rgb()` colors; others draw blue. |
-| `enableTooltip`      | boolean                         | `true`                           | Show the built in tooltip.                                                                                 |
-| `onOrbClick`         | `(orb, event) => void`          | none                             | Runs on click, tap, or Enter or Space on a focused bubble.                                                 |
-| `onOrbHover`         | `(orb \| null) => void`         | none                             | Runs when the hovered bubble changes; `null` when none is hovered.                                         |
-| `onDataIssue`        | `(issues) => void`              | none                             | Runs once per `setData` call that skipped any entry. See `OrbDataIssue`.                                   |
-| `popOnClick`         | boolean                         | `false`                          | Click, tap, Enter, or Space pops a bubble, after `onOrbClick` runs.                                        |
-| `popStyle`           | `"remove" \| "ghost"`           | `"remove"`                       | What a popped bubble leaves behind: nothing, or a dashed ghost until the next `setData`.                   |
-| `onOrbPop`           | `(orb) => void`                 | none                             | Runs once for every bubble that pops, with the orb as it was.                                              |
-| `enterStyle`         | `"rise" \| "grow"`              | `"rise"`                         | How new bubbles enter: rise from below once the chart is seen, or grow from nothing.                       |
-| `restoreOnNextPop`   | boolean                         | `true`                           | With `popOnClick`, a click first brings back the bubbles the user popped before.                           |
-| `onOrbRestore`       | `(orb) => void`                 | none                             | Runs once for every bubble that comes back, with the new live orb.                                         |
-| `transitionDuration` | number                          | `400`                            | Length in milliseconds of grow, shrink, and resize animations (a rise lasts twice as long). `0` snaps.     |
-| `ariaLabel`          | string                          | `"Bubble chart"`                 | The chart's accessible name.                                                                               |
-| `ariaDescription`    | string                          | none                             | A longer description for screen readers. Pass `""` to clear it.                                            |
-| `reducedMotion`      | `"auto" \| "always" \| "never"` | `"auto"`                         | `"auto"` follows the system setting, `"always"` keeps bubbles still, `"never"` keeps them moving.          |
-| `floatAmplitude`     | number                          | `2`                              | How far bubbles float up and down while idle, in pixels.                                                   |
-| `floatSpeed`         | number                          | `0.002`                          | How fast bubbles float (per millisecond).                                                                  |
-| `damping`            | number                          | `0.95`                           | How quickly bubbles slow down (closer to 1 glides longer). Read once when the chart is created.            |
-| `minVelocity`        | number                          | `0.01`                           | Below this speed, damping stops applying. Read once when the chart is created.                             |
-| `bounceCoefficient`  | number                          | `0.6`                            | How much speed a bubble keeps when it bounces off an edge (0 to 1). Read once when the chart is created.   |
+| Option               | Type                            | Default                          | Description                                                                                                                              |
+| -------------------- | ------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `width`              | number                          | container width                  | Starting width in pixels. The chart then follows its container's size.                                                                   |
+| `height`             | number                          | container height                 | Starting height in pixels. The chart then follows its container's size.                                                                  |
+| `backgroundColor`    | string                          | `"#0a0e1a"`                      | Canvas background color. `"transparent"` shows the page behind the chart.                                                                |
+| `theme`              | `"auto" \| "light" \| "dark"`   | `"auto"`                         | Bubble look. `"auto"` is light when `backgroundColor` is a light hex or `rgb()` color, dark otherwise.                                   |
+| `fontFamily`         | string                          | `"Inter, system-ui, sans-serif"` | Font for bubble labels. Load the font on your page first; the chart does not load fonts.                                                 |
+| `formatValue`        | `(value, orb) => string`        | `String`                         | The text shown for a bubble's value, on the canvas, in the tooltip, and for screen readers. See [Formatting values](#formatting-values). |
+| `minTextSize`        | number                          | `10`                             | The smallest text size in pixels drawn. Lower it to show more text on small bubbles; text that would be smaller is hidden.               |
+| `minRadius`          | number                          | `8`                              | The smallest radius in pixels, a floor so tiny values stay visible. Area follows value above it.                                         |
+| `maxRadius`          | number                          | `80`                             | Radius of the bubble with the largest value, in pixels.                                                                                  |
+| `colorScheme`        | string[]                        | 8 blues, cyans, and purples      | Colors used, in order, for bubbles without their own `color`. Use hex or `rgb()` colors; others draw blue.                               |
+| `enableTooltip`      | boolean                         | `true`                           | Show the built in tooltip.                                                                                                               |
+| `onOrbClick`         | `(orb, event) => void`          | none                             | Runs on click, tap, or Enter or Space on a focused bubble.                                                                               |
+| `onOrbHover`         | `(orb \| null) => void`         | none                             | Runs when the hovered bubble changes; `null` when none is hovered.                                                                       |
+| `onDataIssue`        | `(issues) => void`              | none                             | Runs once per `setData` call that skipped any entry. See `OrbDataIssue`.                                                                 |
+| `popOnClick`         | boolean                         | `false`                          | Click, tap, Enter, or Space pops a bubble, after `onOrbClick` runs.                                                                      |
+| `popStyle`           | `"remove" \| "ghost"`           | `"remove"`                       | What a popped bubble leaves behind: nothing, or a dashed ghost until the next `setData`.                                                 |
+| `onOrbPop`           | `(orb) => void`                 | none                             | Runs once for every bubble that pops, with the orb as it was.                                                                            |
+| `enterStyle`         | `"rise" \| "grow"`              | `"rise"`                         | How new bubbles enter: rise from below once the chart is seen, or grow from nothing.                                                     |
+| `restoreOnNextPop`   | boolean                         | `true`                           | With `popOnClick`, a click first brings back the bubbles the user popped before.                                                         |
+| `onOrbRestore`       | `(orb) => void`                 | none                             | Runs once for every bubble that comes back, with the new live orb.                                                                       |
+| `transitionDuration` | number                          | `400`                            | Length in milliseconds of grow, shrink, and resize animations (a rise lasts twice as long). `0` snaps.                                   |
+| `ariaLabel`          | string                          | `"Bubble chart"`                 | The chart's accessible name.                                                                                                             |
+| `ariaDescription`    | string                          | none                             | A longer description for screen readers. Pass `""` to clear it.                                                                          |
+| `reducedMotion`      | `"auto" \| "always" \| "never"` | `"auto"`                         | `"auto"` follows the system setting, `"always"` keeps bubbles still, `"never"` keeps them moving.                                        |
+| `floatAmplitude`     | number                          | `2`                              | How far bubbles float up and down while idle, in pixels.                                                                                 |
+| `floatSpeed`         | number                          | `0.002`                          | How fast bubbles float (per millisecond).                                                                                                |
+| `damping`            | number                          | `0.95`                           | How quickly bubbles slow down (closer to 1 glides longer). Read once when the chart is created.                                          |
+| `minVelocity`        | number                          | `0.01`                           | Below this speed, damping stops applying. Read once when the chart is created.                                                           |
+| `bounceCoefficient`  | number                          | `0.6`                            | How much speed a bubble keeps when it bounces off an edge (0 to 1). Read once when the chart is created.                                 |
 
 ### Data format (`OrbDataInput`)
 
@@ -301,9 +303,26 @@ New reasons may be added in a minor release, so keep a default branch in your ha
 
 All exports are named; there is no default export.
 
+## Formatting values
+
+`formatValue` turns a value into the text for it. One function feeds the canvas, the tooltip's `Value:` line, and the text screen readers hear, so the three always agree.
+
+```js
+new OrbChart("#chart", {
+  formatValue: (value, orb) => `$${(value / 1e6).toFixed(1)}M`,
+});
+```
+
+- An empty or whitespace only result hides the value everywhere.
+- A function that throws is logged once and the plain number is used for that call.
+- To go back to the plain number after setting one, pass `formatValue: String`. `undefined` is ignored, like every other option.
+- In React, `formatValue` can change on every render. The newest function runs on the next draw and causes no update.
+- Long text shrinks to fit the bubble, and is hidden when it would be under `minTextSize`. Image bubbles draw their value too, when the radius is at least 30 px.
+
 ## Known limitations
 
-- The value drawn on a bubble always ends with `%`. The tooltip and screen reader text show the plain number. A `formatValue` option is planned (see [UPDATE.md](UPDATE.md)).
+- With no `formatValue`, the value is the plain number, with no rounding, so a float such as `0.1 + 0.2` shows as `0.30000000000000004`. Format floats yourself.
+- `formatValue` runs once per bubble per drawn frame, so keep it cheap. It must not call `updateConfig` or `setData`, and must not change the orb it receives.
 - `theme: "auto"` treats `"transparent"`, named colors (like `"white"`), and `hsl()` as dark. On a light page behind a transparent chart, set `theme: "light"`.
 - Labels look best in a rounded font, but the chart cannot load fonts. Load one on your page and pass it as `fontFamily`.
 - The soap film and crescent are canvas approximations of the design and do not match it pixel for pixel. Browsers without `createConicGradient` skip the film.

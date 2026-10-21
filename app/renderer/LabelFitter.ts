@@ -10,7 +10,7 @@ export interface LabelFit {
   valueDy: number;
 }
 
-/** Text smaller than this is not drawn. */
+/** The default for text smaller than which nothing is drawn. */
 const MIN_SIZE = 10;
 const PROBE = 100;
 /** Fonts curve gently and settle in 1 or 2 passes; steep ones need more. */
@@ -26,10 +26,21 @@ const MAX_PASSES = 12;
 export class LabelFitter {
   private readonly widths = new Map<string, number>();
   private family = "";
+  private limit = 256;
+
+  /**
+   * Sets how many measures to keep, from the bubble count. Past it the cache
+   * is cleared, so a formatter whose text changes every frame cannot grow it
+   * without limit. Four texts per bubble, about four measures each.
+   */
+  reserve(bubbles: number) {
+    this.limit = Math.max(256, 16 * bubbles);
+  }
 
   /**
    * Fits `label` (and `value`, when given) in a bubble of radius `r`. Returns
-   * `null` when the label would be smaller than 10 px, so nothing is drawn.
+   * `null` when the label would be smaller than `minSize`, so nothing is
+   * drawn. A value under `minSize` (or under 30 px of radius) is left out.
    */
   fit(
     ctx: CanvasRenderingContext2D,
@@ -38,29 +49,29 @@ export class LabelFitter {
     label: string,
     value: string | null,
     hasImage: boolean,
+    minSize = MIN_SIZE,
   ): LabelFit | null {
-    if (family !== this.family) {
+    if (family !== this.family || this.widths.size > this.limit) {
       this.widths.clear();
       this.family = family;
     }
     const cap = (hasImage ? 1.2 : 1.5) * r;
     const labelSize = this.size(ctx, "bold", label, 0.4 * r, cap);
-    if (labelSize < MIN_SIZE) return null;
-    if (hasImage) {
-      return { labelSize, labelDy: 0.45 * r, valueSize: 0, valueDy: 0 };
-    }
+    if (labelSize < minSize) return null;
+    // Over an image the plain layout moves down by 0.45 r.
+    const down = hasImage ? 0.45 * r : 0;
     const valueSize =
       value === null || r < 30
         ? 0
         : this.size(ctx, "600", value, 0.62 * labelSize, cap);
-    if (valueSize < MIN_SIZE) {
-      return { labelSize, labelDy: 0, valueSize: 0, valueDy: 0 };
+    if (valueSize < minSize) {
+      return { labelSize, labelDy: down, valueSize: 0, valueDy: 0 };
     }
     return {
       labelSize,
-      labelDy: -0.5 * valueSize,
+      labelDy: down - 0.5 * valueSize,
       valueSize,
-      valueDy: 0.55 * labelSize,
+      valueDy: down + 0.55 * labelSize,
     };
   }
 

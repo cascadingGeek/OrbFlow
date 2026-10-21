@@ -4,11 +4,12 @@ import { CanvasInput, type InputConfig } from "./CanvasInput";
 import { BubblePainter } from "./BubblePainter";
 import { BurstEffects, type PopSnapshot } from "./BurstEffects";
 import { CanvasRenderer, type FrameTime } from "./CanvasRenderer";
-import { EntranceGate } from "./EntranceGate";
+import { EntranceGate, watchResize } from "./EntranceGate";
 import { FocusCue } from "./FocusCue";
 import { ImageCache } from "./ImageCache";
 import { LiveAnnouncer } from "./LiveAnnouncer";
 import { TooltipView } from "./TooltipView";
+import { ValueFormatter } from "./ValueFormatter";
 import { Teardown } from "../core/Teardown";
 
 /** The options the view reads. */
@@ -63,58 +64,57 @@ export class ChartView {
     private readonly host: ViewHost,
   ) {
     try {
-      this.images = new ImageCache(host.onImageLoaded);
-      this.teardown.add(() => this.images.dispose());
+      const { teardown } = this;
+      this.images = teardown.own(new ImageCache(host.onImageLoaded));
       const painter = new BubblePainter();
       this.effects = new BurstEffects(painter);
-      this.teardown.add(() => this.effects.clear());
+      teardown.add(() => this.effects.clear());
+      const values = new ValueFormatter(getConfig);
       this.renderer = new CanvasRenderer(container, getConfig(), {
+        values,
         images: this.images,
         painter,
         effects: this.effects,
         riseOf: host.riseOf,
       });
-      this.teardown.add(() => this.renderer.destroy());
-      this.tooltip = new TooltipView(container, getConfig);
-      this.input = new CanvasInput(
-        this.renderer.element,
-        this.tooltip,
-        getConfig,
-        {
+      teardown.add(() => this.renderer.destroy());
+      const valueTextOf = (orb: Orb) => values.drawnText(orb);
+      this.tooltip = new TooltipView(container, getConfig, valueTextOf);
+      this.input = teardown.own(
+        new CanvasInput(this.renderer.element, this.tooltip, getConfig, {
           onActivate: host.onActivate,
           onCanvasMiss: host.onCanvasMiss,
           centerOf: (orb) => this.centerOf(orb),
-        },
+        }),
       );
-      this.teardown.add(() => this.input.dispose());
       this.cue = new FocusCue({
         tooltip: this.tooltip,
         setRing: (id) => this.renderer.setFocus(id),
         centerOf: (orb) => this.centerOf(orb),
         redraw: host.redrawIfStopped,
       });
-      this.layer = new AccessibleLayer(container, getConfig, {
-        onFocus: (orb) => this.cue.focus(orb),
-        onEscape: () => this.cue.escape(),
-        onActivate: host.onActivate,
-      });
-      this.teardown.add(() => this.layer.dispose());
-      this.announcer = new LiveAnnouncer(container);
-      this.teardown.add(() => this.announcer.dispose());
-      this.gate = new EntranceGate(container, host.onGateOpen);
-      this.teardown.add(() => this.gate.dispose());
-      const observer = new ResizeObserver(() => host.onResize());
-      this.teardown.add(() => observer.disconnect());
-      observer.observe(container);
+      this.layer = teardown.own(
+        new AccessibleLayer(container, getConfig, {
+          onFocus: (orb) => this.cue.focus(orb),
+          onEscape: () => this.cue.escape(),
+          onActivate: host.onActivate,
+          valueTextOf,
+        }),
+      );
+      this.announcer = teardown.own(new LiveAnnouncer(container));
+      this.gate = teardown.own(new EntranceGate(container, host.onGateOpen));
+      teardown.add(watchResize(container, host.onResize));
     } catch (error) {
       this.dispose();
       throw error;
     }
   }
 
-  /** Draws one frame of `orbs`. */
+  /** Draws one frame, then syncs the buttons and open tooltip to its text. */
   render(orbs: Orb[], time: FrameTime) {
     this.renderer.render(orbs, time, this.host.phaseOf);
+    this.layer.refreshText();
+    this.tooltip.refreshOpen();
   }
 
   /** The orb as drawn right now, or `null` when it has no size or place. */

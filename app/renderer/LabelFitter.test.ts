@@ -65,13 +65,59 @@ describe("LabelFitter (AC-4)", () => {
     expect(fit?.valueSize).toBe(0);
   });
 
-  it("puts the label low and narrower over an image, with no value", () => {
-    const fit = new LabelFitter().fit(ctx, font, 50, "Solana", "9%", true);
+  it("puts the label low and narrower over an image, with no value text", () => {
+    const fit = new LabelFitter().fit(ctx, font, 50, "Solana", null, true);
     expect(fit?.labelDy).toBeCloseTo(22.5);
     expect(fit?.valueSize).toBe(0);
     expect(width("Solana", defined(fit).labelSize)).toBeLessThanOrEqual(
       60 + 1e-9,
     );
+  });
+
+  it("uses minSize as the hide threshold for the label and the value", () => {
+    expect(
+      new LabelFitter().fit(ctx, font, 20, "A", "1", false, 10),
+    ).toBeNull();
+    const low = new LabelFitter().fit(ctx, font, 20, "A", "1", false, 6);
+    expect(low?.labelSize).toBeCloseTo(8);
+    expect(low?.valueSize).toBe(0);
+    const value = new LabelFitter().fit(ctx, font, 40, "AB", "9", false, 6);
+    expect(value?.valueSize).toBeGreaterThanOrEqual(6);
+    expect(
+      new LabelFitter().fit(ctx, font, 40, "AB", "9", false, 100),
+    ).toBeNull();
+  });
+
+  it("puts the value on an image bubble 0.45r below the plain layout (spec 0007 AC-7)", () => {
+    const plain = defined(
+      new LabelFitter().fit(ctx, font, 60, "AB", "5", false),
+    );
+    const image = defined(
+      new LabelFitter().fit(ctx, font, 60, "AB", "5", true),
+    );
+    expect(image.valueSize).toBeGreaterThan(0);
+    expect(image.labelDy - plain.labelDy).toBeCloseTo(27, 0);
+    expect(image.valueDy - plain.valueDy).toBeCloseTo(27, 0);
+    const none = defined(new LabelFitter().fit(ctx, font, 29, "AB", "5", true));
+    expect(none.valueSize).toBe(0);
+    expect(none.labelDy).toBeCloseTo(0.45 * 29);
+  });
+
+  it("clears its measures when they pass the reserve, so changing text cannot grow them", () => {
+    const fitter = new LabelFitter();
+    fitter.reserve(1);
+    const spy = jest.spyOn(
+      fake as unknown as { measureText: () => unknown },
+      "measureText",
+    );
+    const before = spy.mock.calls.length;
+    for (let i = 0; i < 2000; i++) {
+      fitter.fit(ctx, font, 60, "A", `value ${i}`, false);
+    }
+    expect(spy.mock.calls.length).toBeGreaterThan(before);
+    const size = (fitter as unknown as { widths: Map<string, number> }).widths
+      .size;
+    expect(size).toBeLessThanOrEqual(256 + 40);
   });
 
   it("measures nothing new for a size it has seen, until the font changes", () => {

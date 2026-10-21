@@ -166,4 +166,70 @@ describe("ConfigResolver", () => {
       expect(warn).not.toHaveBeenCalled();
     });
   });
+
+  describe("spec 0007 options", () => {
+    const size = { width: 0, height: 0 };
+    let warn: jest.SpyInstance;
+    beforeEach(() => {
+      warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    });
+    afterEach(() => warn.mockRestore());
+
+    it("defaults to the plain number and 10 px", () => {
+      const config = new ConfigResolver().resolve({}, size);
+      expect(config.formatValue(42, {} as never)).toBe("42");
+      expect(config.minTextSize).toBe(10);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("keeps a function, and goes back to the plain number with String", () => {
+      const resolver = new ConfigResolver();
+      const fn = (v: number) => `$${v}`;
+      const set = resolver.resolve({ formatValue: fn, minTextSize: 6.5 }, size);
+      expect(set.formatValue).toBe(fn);
+      expect(set.minTextSize).toBe(6.5);
+      const reset = resolver.merge(set, { formatValue: String });
+      expect(reset.formatValue(0.1 + 0.2, {} as never)).toBe(
+        "0.30000000000000004",
+      );
+      expect(resolver.merge(set, { formatValue: undefined }).formatValue).toBe(
+        fn,
+      );
+    });
+
+    it("warns once and falls back for a formatValue that is not a function", () => {
+      const resolver = new ConfigResolver();
+      const current = resolver.resolve({ formatValue: "x" as never }, size);
+      resolver.merge(current, { formatValue: "x" as never });
+      resolver.merge(current, { formatValue: "x" as never });
+      expect(current.formatValue(1, {} as never)).toBe("1");
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        "OrbFlow: formatValue must be a function, using the plain number.",
+      );
+    });
+
+    it.each([0, 0.5, NaN, Infinity, "a", null])(
+      "warns once and uses 10 for minTextSize %p",
+      (bad) => {
+        const resolver = new ConfigResolver();
+        const current = resolver.resolve({ minTextSize: bad as never }, size);
+        resolver.merge(current, { minTextSize: bad as never });
+        expect(current.minTextSize).toBe(10);
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn).toHaveBeenCalledWith(
+          "OrbFlow: minTextSize must be a finite number of at least 1, using 10.",
+        );
+      },
+    );
+
+    it("allows 1 and a large minTextSize", () => {
+      const resolver = new ConfigResolver();
+      expect(resolver.resolve({ minTextSize: 1 }, size).minTextSize).toBe(1);
+      expect(resolver.resolve({ minTextSize: 500 }, size).minTextSize).toBe(
+        500,
+      );
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -219,7 +219,7 @@ Order follows Tracer Bullet: each slice goes through core, React, types, tests, 
 ## Follow-up
 
 - [ ] Sprite cache for bubbles if AC-18's 50 bubble check is not smooth; belongs to feature 7 (performance).
-- [ ] `formatValue` (UPDATE.md C6) is still deferred; the canvas keeps the `%` suffix.
+- [x] `formatValue` (UPDATE.md C6) was deferred here; spec 0007 added it, and the default value text is now the plain number (no `%`).
 - [ ] Hover squish, sideways wobble, drag, and small on top drawing (UPDATE.md C1, C2, C5, C7) stay after 1.0.
 - [ ] A clickable ghost that brings a bubble back (needs `restore(id)` and a keyboard path) was left out on purpose.
 - [x] The scope release plan says no new chart features before 1.0; the engineer chose to ship this one before 1.0. Recorded in the scope release plan line and enrolled as feature 12.

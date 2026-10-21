@@ -20,6 +20,7 @@ This guide covers what OrbFlow can do, how to set it up in plain JavaScript, Rea
 - [Performance](#performance)
 - [Option reference](#option-reference)
 - [Troubleshooting](#troubleshooting)
+- [Formatting values](#formatting-values)
 - [Known limitations](#known-limitations)
 
 ---
@@ -528,7 +529,7 @@ const isSmall = useMediaQuery("(max-width: 640px)");
 { id: "eth", label: "ETH", value: 30, imageUrl: "/logos/eth.png" }
 ```
 
-- The image fills the inner circle, cropped to cover (never squashed), with a vignette and the glass drawn on top. The label moves low and the value line is hidden.
+- The image fills the inner circle, cropped to cover (never squashed), with a vignette and the glass drawn on top. The label moves low and the value sits under it, when the radius is at least 30 px and the text fits (see `formatValue` and `minTextSize`).
 - Images load with `crossOrigin = "anonymous"`. Use same origin files (`/public` in Next.js) or a host that sends `Access-Control-Allow-Origin`. An image that fails to load is skipped, and the bubble draws without it.
 - Square images look best. Logos with transparent backgrounds work well.
 - Each URL is fetched once and cached for the life of the chart.
@@ -580,6 +581,8 @@ The React component takes the same options as props, plus `data`, `className`, `
 | `backgroundColor` | string | `"#0a0e1a"` | canvas background; `"transparent"` shows the page |
 | `theme` | `"auto" \| "light" \| "dark"` | `"auto"` | bubble look; auto reads `backgroundColor` |
 | `fontFamily` | string | `"Inter, system-ui, sans-serif"` | label font; load it on the page first |
+| `formatValue` | `(value, orb) => string` | `String` | text for a bubble's value, shared by the canvas, tooltip, and screen reader text |
+| `minTextSize` | number | `10` | smallest text size in pixels drawn; smaller text is hidden |
 | `minRadius` | number | `8` | smallest radius in pixels (a floor) |
 | `maxRadius` | number | `80` | radius of the largest value |
 | `colorScheme` | string[] | 8 blues and purples | colors for bubbles without their own `color` |
@@ -603,7 +606,7 @@ The React component takes the same options as props, plus `data`, `className`, `
 | `minVelocity` | number | `0.01` | below this speed, damping stops (read once) |
 | `bounceCoefficient` | number | `0.6` | speed kept after an edge bounce (read once) |
 
-Invalid values for `minRadius`, `transitionDuration`, `fontFamily`, `theme`, `popStyle`, `enterStyle`, `restoreOnNextPop`, and `reducedMotion` fall back to their defaults with a console warning.
+Invalid values for `minRadius`, `minTextSize`, `formatValue`, `transitionDuration`, `fontFamily`, `theme`, `popStyle`, `enterStyle`, `restoreOnNextPop`, and `reducedMotion` fall back to their defaults with a console warning.
 
 ---
 
@@ -623,9 +626,25 @@ Invalid values for `minRadius`, `transitionDuration`, `fontFamily`, `theme`, `po
 
 ---
 
+## Formatting values
+
+Set `formatValue` once and the canvas, the tooltip, and the screen reader text all use it:
+
+```js
+const chart = new OrbChart("#chart", {
+  formatValue: (value) =>
+    new Intl.NumberFormat("en", { style: "currency", currency: "USD", notation: "compact" }).format(value),
+});
+```
+
+In React, pass an inline function. A new function on every render causes no chart update, and the newest one runs on the next draw. A paused chart shows a changed formatter after its next draw. To go back to the plain number, pass `formatValue: String` (`undefined` is ignored). Lower `minTextSize` (for example `7`) to show text on small bubbles.
+
+---
+
 ## Known limitations
 
-- The value drawn on a bubble always ends with `%`. The tooltip and screen reader text show the plain number. A `formatValue` option is planned.
+- With no `formatValue` the value is the plain number, with no rounding, so floats show in full. Format them yourself (see the recipe above).
+- `formatValue` runs once per bubble per frame, so keep it cheap. Calling `updateConfig` or `setData` inside it, or changing the orb it receives, is not supported.
 - `theme: "auto"` treats `"transparent"`, named colors, and `hsl()` as dark.
 - The chart cannot load fonts; load them yourself and pass `fontFamily`.
 - The soap film and crescent are canvas approximations of the design and do not match it pixel for pixel. Browsers without `createConicGradient` skip the film.

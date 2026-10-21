@@ -9,7 +9,12 @@ import {
 } from "../test-support/fakeDom";
 
 describe("BubblePainter (AC-6, AC-7)", () => {
-  const dark: Look = { theme: "dark", filmAngle: 1.5, fontFamily: "Inter" };
+  const dark: Look = {
+    theme: "dark",
+    filmAngle: 1.5,
+    fontFamily: "Inter",
+    minTextSize: 10,
+  };
   const light: Look = { ...dark, theme: "light" };
   const bubble = (extra: Partial<Bubble> = {}): Bubble => ({
     x: 100,
@@ -18,6 +23,7 @@ describe("BubblePainter (AC-6, AC-7)", () => {
     color: "#ff0000",
     label: "BTC",
     value: 9,
+    valueText: "9%",
     ...extra,
   });
 
@@ -125,11 +131,31 @@ describe("BubblePainter (AC-6, AC-7)", () => {
       expect(ctx.gradients[2].stops[1]).toEqual([1, "rgba(20,14,40,0.55)"]);
     });
 
-    it("draws the label low and no value over an image", () => {
-      const ctx = paint(dark, bubble({ image: image(10, 10) }));
-      const texts = ctx.calls.filter((c) => c.method === "fillText");
+    const textsOf = (ctx: FakeContext) =>
+      ctx.calls.filter((c) => c.method === "fillText");
+
+    it("draws the label low and no value over an image when the value text is empty", () => {
+      const ctx = paint(dark, bubble({ image: image(10, 10), valueText: "" }));
+      const texts = textsOf(ctx);
       expect(texts.map((c) => c.args[0])).toEqual(["BTC"]);
       expect(texts[0].args[2]).toBeCloseTo(100 + 0.45 * 50);
+    });
+
+    it("draws the value under the label over an image (spec 0007 AC-7)", () => {
+      const texts = textsOf(paint(dark, bubble({ image: image(10, 10) })));
+      expect(texts.map((c) => c.args[0])).toEqual(["BTC", "9%"]);
+      expect(texts[1].args[2]).toBeGreaterThan(texts[0].args[2] as number);
+    });
+
+    it("hides a value that cannot reach minTextSize, and shows it once lowered", () => {
+      const r = 40;
+      const small = bubble({ r, valueText: "9%" });
+      expect(textsOf(paint(dark, small))).toHaveLength(1);
+      const lowered = { ...dark, minTextSize: 6 };
+      expect(textsOf(paint(lowered, small)).map((c) => c.args[0])).toEqual([
+        "BTC",
+        "9%",
+      ]);
     });
   });
 });

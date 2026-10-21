@@ -149,6 +149,36 @@ export interface OrbChartConfig extends PhysicsConfig {
    * @default "Inter, system-ui, sans-serif"
    */
   fontFamily?: string;
+  /**
+   * Turns a bubble's value into the text shown for it. The same text is drawn
+   * on the canvas, shown in the tooltip's `Value:` line, and read by screen
+   * readers, so the three always agree. `orb` is your own orb, the same one
+   * `onOrbClick` gets.
+   *
+   * With no `formatValue` the text is `String(value)`, the plain number, with
+   * no rounding: a float such as `0.1 + 0.2` shows in full, so format floats
+   * yourself. `undefined` is ignored, so to go back to the plain number pass
+   * `formatValue: String`. A result that is not a string is converted with
+   * `String()`. An empty or whitespace only result hides the value
+   * everywhere. A function that throws is logged once and the plain number is
+   * used for that call. A value that is not a function logs a warning and
+   * falls back to the plain number.
+   *
+   * It runs once per bubble per drawn frame, so keep it cheap. It must not
+   * call `updateConfig` or `setData`, and must not change the orb.
+   * @default (value) => String(value)
+   */
+  formatValue?: (value: number, orb: Orb) => string;
+  /**
+   * The smallest text size in pixels a label or value is drawn at. Text that
+   * would need to be smaller is hidden instead. Lower it to show more text on
+   * small bubbles, or raise it to hide small text; there is no upper limit,
+   * and a large value simply hides text. Fractions are allowed. A value that
+   * is not a finite number of at least 1 logs a warning and falls back to
+   * the default.
+   * @default 10
+   */
+  minTextSize?: number;
 }
 
 /**

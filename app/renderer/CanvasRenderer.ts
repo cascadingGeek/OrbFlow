@@ -2,11 +2,15 @@ import type { Orb, OrbChartConfig } from "../types/types";
 import { BubblePainter, type Look } from "./BubblePainter";
 import { BurstEffects } from "./BurstEffects";
 import { ImageCache } from "./ImageCache";
+import { drawFocusRing } from "./focusRing";
+import { ValueFormatter } from "./ValueFormatter";
 import { resolveTheme } from "./color";
 
 /** The parts a renderer draws with. Each one is optional for tests. */
 export interface RendererParts {
   images?: ImageCache;
+  /** Turns an orb's value into the text drawn for it. */
+  values?: ValueFormatter;
   painter?: BubblePainter;
   effects?: BurstEffects;
   /** How far below its place an orb is drawn at `now`, in pixels. */
@@ -34,6 +38,7 @@ export class CanvasRenderer {
   private readonly images: ImageCache;
   private readonly painter: BubblePainter;
   private readonly effects: BurstEffects;
+  private readonly values: ValueFormatter;
   private readonly riseOf: (orb: Orb, now: number) => number;
   private width: number = 0;
   private height: number = 0;
@@ -51,6 +56,7 @@ export class CanvasRenderer {
     this.images = parts.images ?? new ImageCache();
     this.effects = parts.effects ?? new BurstEffects(this.painter);
     this.riseOf = parts.riseOf ?? (() => 0);
+    this.values = parts.values ?? new ValueFormatter(() => this.config);
     this.updateConfig(config);
 
     // Check the context before the canvas touches the container, so a
@@ -133,10 +139,13 @@ export class CanvasRenderer {
     const look: Look = {
       theme: this.theme,
       fontFamily: this.config.fontFamily || "Inter, system-ui, sans-serif",
+      minTextSize: this.config.minTextSize ?? 10,
       filmAngle:
         FILM_START +
         (turning ? (time.elapsed * 2 * Math.PI) / FILM_TURN_MS : 0),
     };
+    this.values.beginFrame();
+    this.painter.reserve(orbs.length);
     this.effects.drawGhosts(ctx, time.now, look);
     for (const orb of orbs) {
       this.painter.paint(
@@ -156,7 +165,7 @@ export class CanvasRenderer {
         phaseOf(focused),
         time.now,
       );
-      this.drawFocusRing(x, y, focused.radius);
+      drawFocusRing(this.ctx, x, y, focused.radius);
     }
   }
 
@@ -170,22 +179,9 @@ export class CanvasRenderer {
       color: orb.color,
       label: orb.label,
       value: orb.value,
+      valueText: this.values.text(orb),
       image: this.images.get(orb.imageUrl),
     };
-  }
-
-  // Two tones, so the ring shows on any background.
-  private drawFocusRing(x: number, y: number, r: number) {
-    this.ctx.lineWidth = 2;
-    for (const [offset, color] of [
-      [3, "#0a0e1a"],
-      [5, "#ffffff"],
-    ] as const) {
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, r + offset, 0, Math.PI * 2);
-      this.ctx.strokeStyle = color;
-      this.ctx.stroke();
-    }
   }
 
   /** Removes the canvas. */

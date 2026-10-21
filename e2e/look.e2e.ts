@@ -49,7 +49,7 @@ test.describe("labels fit with real font metrics (AC-4)", () => {
       Object.fromEntries(window.chart.getData().map((o) => [o.id, o.radius])),
     );
     const owner = (t: string) =>
-      t === "AB" || t === "9.77%"
+      t === "AB" || t === "9.77"
         ? "mid"
         : t.startsWith("A very")
           ? "tiny"
@@ -70,7 +70,7 @@ test.describe("labels fit with real font metrics (AC-4)", () => {
         window.chart.getData().map((o) => [o.id, { r: o.radius, y: o.y }]),
       ),
     );
-    const owner = (t: string) => (t === "AB" || t === "9.77%" ? "mid" : "big");
+    const owner = (t: string) => (t === "AB" || t === "9.77" ? "mid" : "big");
 
     for (const drawn of text) {
       const { r, y } = orbs[owner(drawn.t)];
@@ -89,8 +89,8 @@ test.describe("labels fit with real font metrics (AC-4)", () => {
 
     expect(drawn).not.toContain("A very long label indeed");
     expect(drawn).toContain("AB");
-    expect(drawn).not.toContain("9.77%");
-    expect(drawn).toContain("100%");
+    expect(drawn).not.toContain("9.77");
+    expect(drawn).toContain("100");
   });
 
   test("uses the fontFamily option for every text", async ({ page }) => {
@@ -173,7 +173,7 @@ test.describe("soap film (AC-6)", () => {
   });
 });
 
-test("an image is a lens: cropped to cover, 106%, label low, no value (AC-7)", async ({
+test("an image is a lens: cropped to cover, 106%, label low, value under it (AC-7)", async ({
   page,
 }) => {
   await openChart(page, { maxRadius: 100, floatAmplitude: 0 }, []);
@@ -201,6 +201,45 @@ test("an image is a lens: cropped to cover, 106%, label low, no value (AC-7)", a
   expect([sx, sy, sw, sh]).toEqual([50, 0, 100, 100]);
   expect(dw).toBeCloseTo(size, 6);
   expect(dh).toBeCloseTo(size, 6);
-  expect(text.map((t) => t.t)).toEqual(["Solana"]);
-  expect(text[0].y).toBeCloseTo(150 + 0.45 * 100, 6);
+  expect(text.map((t) => t.t)).toEqual(["Solana", "1"]);
+  expect(text[1].y).toBeGreaterThan(text[0].y);
+  // Spec 0007 AC-7: the value stays inside the circle too.
+  for (const drawn of text) {
+    const px = Number(/(\d+(?:\.\d+)?)px/.exec(drawn.font)?.[1]);
+    const dy = Math.abs(drawn.y - 150) + px / 2;
+    expect(Math.hypot(drawn.w / 2, dy)).toBeLessThanOrEqual(88);
+  }
 });
+
+for (const maxRadius of [40, 50, 60, 80, 100]) {
+  test(`image bubble text stays inside the circle at radius ${maxRadius} (spec 0007 AC-7, AC-10a)`, async ({
+    page,
+  }) => {
+    await openChart(page, { maxRadius, floatAmplitude: 0 }, []);
+    await page.evaluate(() => {
+      const c = document.createElement("canvas");
+      c.width = 100;
+      c.height = 100;
+      window.chart.pause();
+      window.chart.updateConfig({ formatValue: () => "$1,234,567.89" });
+      window.chart.setData([
+        { id: "img", label: "Solana", value: 1, imageUrl: c.toDataURL() },
+      ]);
+    });
+    await place(page, { img: { x: 200, y: 150 } });
+    await expect.poll(async () => (await redraw(page)).img.length).toBe(1);
+
+    const { text } = await redraw(page);
+
+    // The label always shows. At the larger radii the value does too, so the
+    // value layout is really checked and the loop below cannot pass empty.
+    expect(text.map((t) => t.t)).toContain("Solana");
+    if (maxRadius >= 80)
+      expect(text.map((t) => t.t)).toContain("$1,234,567.89");
+    for (const drawn of text) {
+      const px = Number(/(\d+(?:\.\d+)?)px/.exec(drawn.font)?.[1]);
+      const dy = Math.abs(drawn.y - 150) + px / 2;
+      expect(Math.hypot(drawn.w / 2, dy)).toBeLessThanOrEqual(maxRadius + 0.5);
+    }
+  });
+}

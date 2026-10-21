@@ -6,6 +6,7 @@ const record = (id: string, byUser = true): PopRecord => ({
   value: 1,
   x: 10,
   y: 20,
+  placed: true,
   index: 0,
   byUser,
 });

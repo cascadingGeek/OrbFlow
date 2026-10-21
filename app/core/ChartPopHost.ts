@@ -46,13 +46,16 @@ export class ChartPopHost implements PopHost {
     return this.parts.orbs.live().find((orb) => orb.id === id) ?? null;
   }
 
+  placed(orb: Orb): boolean {
+    return !this.parts.reconciler.awaiting(orb.id);
+  }
+
   indexOf(orb: Orb): number {
     return this.parts.orbs.live().indexOf(orb);
   }
 
   snapshotOf(orb: Orb): PopSnapshot | null {
-    const { view, reconciler } = this.parts;
-    return view.snapshotOf(orb, !reconciler.awaiting(orb.id));
+    return this.parts.view.snapshotOf(orb, this.placed(orb));
   }
 
   remove(orb: Orb) {

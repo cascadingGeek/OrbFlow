@@ -31,6 +31,7 @@ function makeHost(initial: Orb[], idle = false) {
   const host: PopHost = {
     ledger,
     live: (id) => live.find((o) => o.id === id) ?? null,
+    placed: () => true,
     indexOf: (o) => live.indexOf(o),
     snapshotOf: () => ({
       id: "s",
@@ -84,6 +85,7 @@ describe("PopController (spec 0006)", () => {
       metadata: undefined,
       x: 10,
       y: 20,
+      placed: true,
       index: 1,
       byUser: false,
     });

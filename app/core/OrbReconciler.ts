@@ -151,7 +151,9 @@ export class OrbReconciler {
     const radiusOf = this.radiusScale(all, config);
     const radius = radiusOf(record.value);
     return this.make(record, radius, radius, config, (width, height) =>
-      this.spawner.clamp(record, width, height, radius),
+      record.placed
+        ? this.spawner.clamp(record, width, height, radius)
+        : this.spawner.leastCrowded(width, height, radius, live),
     );
   }
 

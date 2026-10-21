@@ -7,6 +7,8 @@ import type { PopLedger, PopRecord } from "./PopLedger";
 export interface PopHost {
   /** The live orb with this id, or `null` (unknown, exiting, or destroyed). */
   live(id: string): Orb | null;
+  /** False while the orb waits for a container with a size. */
+  placed(orb: Orb): boolean;
   /** The orb's position in the `getData()` list. */
   indexOf(orb: Orb): number;
   /** The orb as drawn now, or `null` when it has no size or no place yet. */
@@ -118,6 +120,7 @@ export class PopController {
       metadata: orb.metadata,
       x: orb.x,
       y: orb.y,
+      placed: host.placed(orb),
       index: host.indexOf(orb),
       byUser,
     });

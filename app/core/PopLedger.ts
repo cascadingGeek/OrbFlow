@@ -9,6 +9,11 @@ export interface PopRecord {
   /** Resting place at pop time, not the drawn center. */
   x: number;
   y: number;
+  /**
+   * False when the orb was still waiting for a container with a size, so
+   * `x` and `y` mean nothing and a restore picks a fresh place.
+   */
+  placed: boolean;
   /** Position in the `getData()` list at pop time. */
   index: number;
   /** True when a user activation popped it, false when `pop(id)` did. */

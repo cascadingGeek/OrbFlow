@@ -23,6 +23,7 @@ const record = (index: number): PopRecord => ({
   y: 6,
   index,
   byUser: true,
+  placed: true,
 });
 
 /** Fakes at the chart's own seams, with the call order recorded. */
@@ -88,6 +89,14 @@ describe("ChartPopHost (spec 0006 AC-7 to AC-10)", () => {
     const { host } = makeParts([a, b]);
     expect(host.indexOf(b)).toBe(1);
     expect(host.indexOf(orb("x"))).toBe(-1);
+  });
+
+  it("reports an orb as placed only when it is not awaiting its first place", () => {
+    const a = orb("a");
+    const { host, parts } = makeParts([a]);
+    expect(host.placed(a)).toBe(true);
+    parts.reconciler.awaiting.mockReturnValue(true);
+    expect(host.placed(a)).toBe(false);
   });
 
   it("takes a snapshot as placed only when the orb is not awaiting its first place", () => {

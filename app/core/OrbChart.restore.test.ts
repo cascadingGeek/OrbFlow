@@ -3,6 +3,7 @@
  */
 import { OrbChart } from "./OrbChart";
 import {
+  FakeResizeObserver,
   dispatchMouse,
   installFakeCanvas,
   installFakeMatchMedia,
@@ -358,6 +359,60 @@ describe("OrbChart restore (spec 0006)", () => {
       setup();
       dispatchMouse(canvas(), "click", 80, 150);
       expect(region()).toBe("A popped");
+    });
+  });
+
+  describe("containers with no size yet (AC-7)", () => {
+    const unsized = () => {
+      setElementSize(container, 0, 0);
+      const chart = new OrbChart(container, {
+        transitionDuration: 0,
+        maxRadius: 40,
+      });
+      charts.push(chart);
+      chart.setData([row("a"), row("b")]);
+      return chart;
+    };
+    const resize = () => {
+      setElementSize(container, 400, 300);
+      FakeResizeObserver.instances[0].trigger();
+    };
+
+    it("holds a bubble restored before any size, then places it on the first resize", () => {
+      const chart = unsized();
+      chart.pop("a");
+
+      expect(chart.restore("a")).toBe(true);
+      resize();
+
+      const a = chart.getData().find((o) => o.id === "a");
+      expect(a).toMatchObject({ x: 200, y: 150 });
+    });
+
+    it("gives a bubble popped before any size a fresh place, not the corner, when restored after the resize", () => {
+      const chart = unsized();
+      chart.pop("a");
+      resize();
+
+      chart.restore("a");
+
+      const a = chart.getData().find((o) => o.id === "a");
+      expect(a).toMatchObject({ x: 200, y: 150 });
+      expect(a?.x).not.toBe(a?.radius);
+    });
+
+    it("still brings a bubble popped after the resize back to its old place", () => {
+      const chart = unsized();
+      resize();
+      Object.assign(chart.getData()[0], { x: 90, y: 100 });
+      chart.pop("a");
+
+      chart.restore("a");
+
+      expect(chart.getData().find((o) => o.id === "a")).toMatchObject({
+        x: 90,
+        y: 100,
+      });
     });
   });
 

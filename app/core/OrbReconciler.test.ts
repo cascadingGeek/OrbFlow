@@ -251,6 +251,7 @@ describe("OrbReconciler rise and restore (spec 0006)", () => {
     y,
     index: 0,
     byUser: true,
+    placed: true,
   });
 
   it("creates a rising orb at its target radius, and a growing one at 0 (AC-1)", () => {
@@ -311,6 +312,19 @@ describe("OrbReconciler rise and restore (spec 0006)", () => {
     expect(orb.radius).toBe(80);
     expect(orb.vx).toBe(0);
     expect(reconciler.phaseOf(orb)).toBe(0);
+  });
+
+  it("picks a fresh place for a record that was never placed (AC-7)", () => {
+    const reconciler = new OrbReconciler(new RadiusTweener(), () => 0.5);
+
+    const orb = reconciler.restoreOrb(
+      { ...record("a", 1, 0, 0), placed: false },
+      resolve(),
+      [],
+    );
+
+    expect(orb.x).toBeGreaterThan(orb.radius);
+    expect(orb.y).toBeGreaterThan(orb.radius);
   });
 
   it("gives a restored orb the radius of live plus popped values (AC-8)", () => {

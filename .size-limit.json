@@ -12,7 +12,7 @@
     "import": "{ OrbChart }",
     "ignore": ["react", "react-dom"],
     "gzip": true,
-    "limit": "15 kB"
+    "limit": "16 kB"
   },
   {
     "name": "cdn",

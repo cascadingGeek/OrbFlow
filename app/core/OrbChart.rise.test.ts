@@ -238,6 +238,21 @@ describe("OrbChart rise (spec 0006)", () => {
       expect(top).toBeLessThan(300);
     });
 
+    it("rises a restored bubble at once while the gate is still closed", () => {
+      withGate();
+      const chart = make();
+      chart.setData([row("a"), row("b")]);
+      chart.pop("a");
+
+      chart.restore("a");
+      const a = chart.getData().find((o) => o.id === "a");
+      expect(drawnFrom(() => advance(1))).toBeGreaterThanOrEqual(300);
+      atRest(
+        drawnFrom(() => advance(3000)),
+        a?.y ?? 0,
+      );
+    });
+
     it("places parked bubbles at once when updateConfig turns the rise off", () => {
       withGate();
       const chart = make();

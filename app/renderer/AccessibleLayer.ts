@@ -1,10 +1,13 @@
 import type { Orb, OrbChartConfig } from "../types/types";
 import {
   HIDDEN_STYLE,
+  type Entry,
   HiddenText,
   buttonText,
   ensurePositioned,
   keyTarget,
+  newItem,
+  randomId,
   reorderChildren,
   survivorAfter,
 } from "./listDom";
@@ -22,16 +25,9 @@ export interface LayerHooks {
   onEscape(): boolean;
   /** An orb's button was clicked, or pressed with Enter or Space. */
   onActivate(orb: Orb, event: MouseEvent): void;
+  /** The value text the canvas draws for an orb. Defaults to the number. */
+  valueTextOf?(orb: Orb): string;
 }
-
-interface Entry {
-  li: HTMLLIElement;
-  button: HTMLButtonElement;
-  orb: Orb;
-}
-
-const randomId = () =>
-  `orbflow-desc-${Math.random().toString(36).slice(2, 10)}`;
 
 /**
  * A visually hidden list with one real button per orb. Screen readers and the
@@ -98,6 +94,7 @@ export class AccessibleLayer {
       this.entries.delete(id);
     }
     for (const orb of live) this.upsert(orb);
+    this.refreshText();
     this.order = live.map((orb) => orb.id);
     reorderChildren(
       this.list,
@@ -127,19 +124,21 @@ export class AccessibleLayer {
   private upsert(orb: Orb) {
     let entry = this.entries.get(orb.id);
     if (!entry) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.tabIndex = -1;
-      const li = document.createElement("li");
-      li.appendChild(button);
+      const { li, button } = newItem();
       this.idOf.set(button, orb.id);
       entry = { li, button, orb };
       this.entries.set(orb.id, entry);
     }
     entry.orb = orb;
-    // Orb data is user supplied: set it as text, never as HTML.
-    const text = buttonText(orb);
-    if (entry.button.textContent !== text) entry.button.textContent = text;
+  }
+
+  /** Rewrites changed button text in place, so focus stays. */
+  refreshText() {
+    for (const { button, orb } of this.entries.values()) {
+      // Orb data is user supplied: set it as text, never as HTML.
+      const text = buttonText(orb, this.hooks.valueTextOf?.(orb));
+      if (button.textContent !== text) button.textContent = text;
+    }
   }
 
   private moveFocusFrom(lostId: string, previous: string[], live: Set<string>) {

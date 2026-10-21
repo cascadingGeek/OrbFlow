@@ -32,6 +32,9 @@ const config: OrbChartConfig = {
   theme: "light",
   fontFamily: "Nunito, sans-serif",
   minRadius: 8,
+  // Spec 0007: value text and the smallest text size (AC-10).
+  formatValue: (value, orb) => `${orb.label}: ${value}`,
+  minTextSize: 7,
 };
 const data: OrbDataInput[] = [{ id: "a", label: "A", value: 1 }];
 const props: OrbChartProps = { ...config, data };
@@ -49,6 +52,10 @@ const badMotion: OrbChartConfig = { reducedMotion: "sometimes" };
 const badPop: OrbChartConfig = { popStyle: "explode" };
 // @ts-expect-error: theme is "auto", "light", or "dark"
 const badTheme: OrbChartConfig = { theme: "sepia" };
+// @ts-expect-error: formatValue takes a function, not a string
+const badFormat: OrbChartConfig = { formatValue: "$" };
+// @ts-expect-error: minTextSize is a number
+const badTextSize: OrbChartConfig = { minTextSize: "small" };
 // @ts-expect-error: enterStyle is "rise" or "grow"
 const badEnter: OrbChartConfig = { enterStyle: "fade" };
 const popped: boolean = new OrbChart("#chart", config).pop("a");
@@ -80,6 +87,8 @@ export const used = [
   badPop,
   badTheme,
   badEnter,
+  badFormat,
+  badTextSize,
   popped,
   restored,
   restoredAll,

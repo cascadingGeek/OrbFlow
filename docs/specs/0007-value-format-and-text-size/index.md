@@ -1,7 +1,7 @@
 # 0007. Value formatting, image bubble values, and minimum text size
 
 **Date**: 2026-10-21
-**Status**: Proposed
+**Status**: Accepted
 
 ## Summary
 

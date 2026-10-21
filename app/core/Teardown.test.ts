@@ -24,6 +24,17 @@ describe("Teardown", () => {
     expect(step).toHaveBeenCalledTimes(1);
   });
 
+  it("owns a part: returns it and disposes it on run", () => {
+    const part = { dispose: jest.fn() };
+    const teardown = new Teardown();
+
+    expect(teardown.own(part)).toBe(part);
+    expect(part.dispose).not.toHaveBeenCalled();
+    teardown.run();
+
+    expect(part.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("does nothing when empty", () => {
     expect(() => new Teardown().run()).not.toThrow();
   });

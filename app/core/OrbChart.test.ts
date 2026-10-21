@@ -168,7 +168,7 @@ describe("OrbChart (vanilla)", () => {
 
       chart.setData([{ id: "a", label: "Alpha", value: 40 }]);
 
-      expect(drawnText()).toEqual(expect.arrayContaining(["Alpha", "40%"]));
+      expect(drawnText()).toEqual(expect.arrayContaining(["Alpha", "40"]));
     });
 
     it("keeps requesting frames while playing", () => {

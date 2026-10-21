@@ -41,6 +41,7 @@ function makeHost(initial: Orb[], idle = false) {
       color: "#fff",
       label: "",
       value: 1,
+      valueText: "1",
     }),
     remove: (o) => {
       calls.push(`remove ${o.id}`);

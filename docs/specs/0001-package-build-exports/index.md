@@ -22,7 +22,7 @@ This spec decides how orbflow is built and published so `npm install orbflow` ju
 - **AC-4**: The core implementation exists exactly once per format in `dist/`: both entries import it from a shared chunk. The React entry file's first statement is `"use client"`; the core entry and shared chunks carry no such directive.
 - **AC-5**: Importing either entry in Node with no DOM (no `window`, no `document`) does not throw.
 - **AC-6**: `dist/orbflow.iife.js` is a minified file that, evaluated as a classic script, exposes `window.OrbFlow.OrbChart` (and no `default`). The `unpkg` and `jsdelivr` package fields point at it. A plain HTML page using it renders a chart (checked by hand in `/check verify`).
-- **AC-7**: Enforced budgets (minified, gzip): the core entry ≤ 15 kB; the React entry ≤ 16 kB (React itself excluded); the IIFE file ≤ 15 kB (first 8, 9, and 8 kB, raised five times, see *Revision* below). Exceeding any budget fails `npm run size`.
+- **AC-7**: Enforced budgets (minified, gzip): the core entry ≤ 16 kB; the React entry ≤ 17 kB (React itself excluded); the IIFE file ≤ 16 kB (first 8, 9, and 8 kB, raised six times, see *Revision* below). Exceeding any budget fails `npm run size`.
 - **AC-8**: React is an optional peer dependency (`^18.0.0 || ^19.0.0`). The package has zero runtime `dependencies`. Installing the tarball into a project without React prints no peer warning and no `ERESOLVE` error.
 - **AC-9**: All JavaScript output targets ES2020, and every published `.mjs`, `.cjs`, and `.js` file ships a sourcemap with the original sources embedded.
 - **AC-10**: `npm run smoke` packs the real tarball and installs it into three fixture projects (ESM, CommonJS, TypeScript). Each one imports both entries and passes, and any failure exits non zero.
@@ -129,9 +129,9 @@ Build orbflow with tsdown from a single `tsdown.config.ts`, emitting ESM + Commo
 **Size budgets** (`.size-limit.json`, using `@size-limit/preset-small-lib`, with `gzip: true` set explicitly so the numbers match the README's "gzipped" claim). The preset bundles each entry with its relative imports, so the shared chunk is counted in both the core and React numbers:
 | Name | Path | Import | Ignore | Limit |
 |---|---|---|---|---|
-| core | `dist/index.mjs` | `{ OrbChart }` | | 15 kB |
-| react | `dist/react.mjs` | `{ OrbChart }` | `react`, `react-dom` | 16 kB |
-| cdn | `dist/orbflow.iife.js` | whole file | | 15 kB |
+| core | `dist/index.mjs` | `{ OrbChart }` | | 16 kB |
+| react | `dist/react.mjs` | `{ OrbChart }` | `react`, `react-dom` | 17 kB |
+| cdn | `dist/orbflow.iife.js` | whole file | | 16 kB |
 
 Before writing the budgets, step 1 of the build measures the current minified gzip size of the core and records it under *Baseline* below, so the first figure (8 kB) was grounded in a real number.
 
@@ -147,6 +147,8 @@ Before writing the budgets, step 1 of the build measures the current minified gz
 
 **Revision (2026-10-21, spec 0006 review fixes)**: the fixes from the spec 0006 code review (one draw for an idle activation, parked bubbles shown when the rise is turned off, a bubble popped before the container had a size) took the React entry from 14.91 kB to 15.03 kB (15033 B), 33 B over its 15 kB budget. Core is 14.44 kB and cdn 14.50 kB, both still inside. Merging duplicated code did not help, because gzip already folds it, and the one real cut found (10 B) was not enough. The engineer chose a fifth deliberate raise, for the React entry only, to 16 kB, which restores the rule that React is the core budget plus 1 kB. Core and cdn stay at 15 kB. Room left: about 0.97 kB (react), 0.56 kB (core), and 0.50 kB (cdn). The cdn file is now the tightest, so about 0.5 kB is the real limit for feature 7 before this spec reopens. `.size-limit.json` carries the new react number.
 
+**Revision (2026-10-21, spec 0007 measured)**: value formatting, image bubble values, and `minTextSize` landed at core 15.00 kB (15001 B), react 15.65 kB, and cdn 15.06 kB. Core missed its 15 kB budget by 1 B and cdn by 60 B. Spec 0007 (AC-11) had already agreed on a sixth deliberate raise for this case, so core and cdn moved to 16 kB and react to 17 kB, which keeps the rule that React is the core budget plus 1 kB. Room left: about 1.0 kB (core), 1.35 kB (react), and 0.94 kB (cdn). `.size-limit.json` carries the new numbers.
+
 **Smoke fixtures** (`test/consumers/`, each a tiny private project with its own `package.json` and no lockfile):
 - `esm/`: `package.json` with `"type": "module"` and `react`/`react-dom` ^18 as dependencies. `index.mjs` imports both entries and asserts `typeof OrbChart === 'function'` for each, and that `globalThis.window` and `globalThis.document` are undefined after import (AC-1, AC-5).
 - `cjs/`: `package.json` with `"type": "commonjs"`, same React dependencies. `index.cjs` requires both entries with the same assertions (AC-1, AC-5).
@@ -161,7 +163,7 @@ Before writing the budgets, step 1 of the build measures the current minified gz
 | build | `"use client"` line | per chunk banner, chunk name `react` (decided above) |
 | build | CDN global name | decided: `OrbFlow` |
 | build | output target | decided: ES2020 |
-| size | budgets | decided: 15 kB / 16 kB / 15 kB gzip (first 8 / 9 / 8, then 9 / 10 / 9, 12 / 13 / 12, 13 / 14 / 13, and 15 / 15 / 15, see *Revision*) |
+| size | budgets | decided: 16 kB / 17 kB / 16 kB gzip (first 8 / 9 / 8, then 9 / 10 / 9, 12 / 13 / 12, 13 / 14 / 13, 15 / 15 / 15, and 15 / 16 / 15, see *Revision*) |
 | build | tsdown version | exact pin to latest 0.23+ at build time, recorded in `package.json` |
 | smoke | tarball under test | `npm pack` output of the current build |
 
@@ -223,6 +225,6 @@ Tracer Bullet: get one thin, real path from source to an installed tarball worki
 - [ ] Feature 11 (release pipeline) should run `prepublishOnly`'s chain in CI and reuse `npm run smoke` before publishing.
 - [ ] `tsdown-migrate` (installed in `.claude/skills/`) is not yet listed in root `AGENTS.md` `## Agent skills`; it's project wide build tooling, so it belongs at root. `/audit` (feature 2) can record it, along with the declined skills: antfu/skills tsdown, the publint and size-limit skills.
 - [x] Features 4, 6, and 7 must stay within the core budget; if one cannot, revisit the budget deliberately in this spec instead of raising the limit quietly. Feature 6 did not fit 8 kB, and the budgets were raised here on 2026-10-20.
-- [ ] Feature 7 (performance and idle behavior) starts with about 0.50 kB of room in the cdn file (0.56 kB in core, 0.97 kB in the React entry), after the spec 0006 review raise of React to 16 kB. The cdn file is the tightest now. It should measure first, and either stay inside the budget or revisit it here again, on purpose.
+- [ ] Feature 7 (performance and idle behavior) starts with about 0.94 kB of room in the cdn file (1.0 kB in core, 1.35 kB in the React entry), after the spec 0007 raise to 16 / 17 / 16 kB. The cdn file is the tightest now. It should measure first, and either stay inside the budget or revisit it here again, on purpose.
 
 Decision history (context, options considered, rationale) lives in [rationale.md](./rationale.md).

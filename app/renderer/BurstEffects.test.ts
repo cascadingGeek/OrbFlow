@@ -15,7 +15,12 @@ import {
 } from "../test-support/fakeDom";
 
 describe("BurstEffects (AC-10, AC-12)", () => {
-  const look: Look = { theme: "dark", filmAngle: 0, fontFamily: "Inter" };
+  const look: Look = {
+    theme: "dark",
+    filmAngle: 0,
+    fontFamily: "Inter",
+    minTextSize: 10,
+  };
   const snap: PopSnapshot = {
     id: "a",
     x: 100,
@@ -24,6 +29,7 @@ describe("BurstEffects (AC-10, AC-12)", () => {
     color: "#ff0000",
     label: "A",
     value: 1,
+    valueText: "1",
   };
   let fake: FakeContext;
   let ctx: CanvasRenderingContext2D;

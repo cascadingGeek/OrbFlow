@@ -1,4 +1,5 @@
 import type { OrbChartConfig, PhysicsConfig } from "../types/types";
+import { TextOptions } from "./TextOptions";
 
 /** An `OrbChartConfig` with every option except the physics ones filled in. */
 export type ResolvedConfig = Required<
@@ -10,7 +11,6 @@ const DEFAULT_TRANSITION_MS = 400;
 const DEFAULT_ARIA_LABEL = "Bubble chart";
 const MOTION_VALUES = ["auto", "always", "never"];
 const DEFAULT_MIN_RADIUS = 8;
-const DEFAULT_FONT = "Inter, system-ui, sans-serif";
 
 // Cool color palette (Blues, Cyans, Purples)
 const DEFAULT_COLORS = [
@@ -32,6 +32,9 @@ const DEFAULT_COLORS = [
  */
 export class ConfigResolver {
   private readonly warned = new Set<string>();
+  private readonly text = new TextOptions((name, value, message) =>
+    this.warnOnce(name, value, message),
+  );
 
   /** Fills every default. `size` is the fallback width and height. */
   resolve(
@@ -60,7 +63,9 @@ export class ConfigResolver {
       restoreOnNextPop: this.validRestore(config.restoreOnNextPop),
       onOrbRestore: config.onOrbRestore ?? (() => {}),
       theme: this.oneOf("theme", config.theme, ["auto", "light", "dark"]),
-      fontFamily: this.validFont(config.fontFamily),
+      fontFamily: this.text.font(config.fontFamily),
+      formatValue: this.text.format(config.formatValue),
+      minTextSize: this.text.size(config.minTextSize),
       damping: config.damping,
       minVelocity: config.minVelocity,
       bounceCoefficient: config.bounceCoefficient,
@@ -83,7 +88,9 @@ export class ConfigResolver {
     merged.ariaLabel = this.validLabel(merged.ariaLabel);
     merged.reducedMotion = this.validMotion(merged.reducedMotion);
     merged.minRadius = this.validMinRadius(merged.minRadius);
-    merged.fontFamily = this.validFont(merged.fontFamily);
+    merged.fontFamily = this.text.font(merged.fontFamily);
+    merged.formatValue = this.text.format(merged.formatValue);
+    merged.minTextSize = this.text.size(merged.minTextSize);
     merged.theme = this.oneOf("theme", merged.theme, ["auto", "light", "dark"]);
     merged.popStyle = this.oneOf("popStyle", merged.popStyle, [
       "remove",
@@ -119,17 +126,6 @@ export class ConfigResolver {
       `minRadius must be a number of 0 or more, using ${DEFAULT_MIN_RADIUS}.`,
     );
     return DEFAULT_MIN_RADIUS;
-  }
-
-  private validFont(value: unknown): string {
-    if (value === undefined) return DEFAULT_FONT;
-    if (typeof value === "string" && value.trim() !== "") return value;
-    this.warnOnce(
-      "fontFamily",
-      value,
-      `fontFamily must be a non empty string, using "${DEFAULT_FONT}".`,
-    );
-    return DEFAULT_FONT;
   }
 
   // The first allowed value is the default.

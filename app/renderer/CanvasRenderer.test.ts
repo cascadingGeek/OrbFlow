@@ -119,7 +119,7 @@ describe("CanvasRenderer", () => {
     ]);
 
     const text = calls("fillText").map((call) => call.args[0]);
-    expect(text).toEqual(["Alpha", "40%", "Beta", "25%"]);
+    expect(text).toEqual(["Alpha", "40", "Beta", "25"]);
   });
 
   it("draws nothing but the background when there are no orbs", () => {

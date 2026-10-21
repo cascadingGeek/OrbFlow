@@ -23,7 +23,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 7 | Performance and idle behavior | Slice 2 | planned |
 | 12 | Bubble redesign and burst | Slice 2 | in-progress |
 | 13 | Bubble up and restore | Slice 2 | in-progress |
-| 14 | Value format, image values, minimum text | Slice 2 | in-progress |
+| 14 | Value format, image values, minimum text | Slice 2 | done |
 | 8 | README and API reference | Slice 3 | planned |
 | 9 | Runnable examples | Slice 3 | planned |
 | 10 | Live demo page | Slice 3 | planned |
@@ -141,17 +141,17 @@ Bubbles rise from below the chart when it first scrolls into view and when new o
 - [x] Test it: `/test bubble up and restore`
 Spec [0006](../specs/0006-bubble-up-and-restore/index.md) · code in `app/renderer/` and `app/core/`
 
-### 14. Value format, image values, minimum text · in-progress
+### 14. Value format, image values, minimum text · done
 A `formatValue` option so the canvas, the tooltip, and the screen reader text all show the same value text, with the plain number as the default (no more `%`). Image bubbles draw their value too, and a `minTextSize` option lets a developer show smaller text instead of having it hidden. Ships in 1.0.0.
 **Done when:** `formatValue` changes the canvas, tooltip, and hidden button text together, and a screen reader always hears what the canvas shows; image bubbles with room draw a value inside their circle; `minTextSize` lowers or raises the hide threshold; budgets hold or are raised once on purpose to 16, 17, and 16 kB (spec 0001 *Revision*).
 - [x] Design it (spec): `/architect value format, image values, minimum text`
-- [ ] Build it: `/develop value format, image values, minimum text`
-   - [ ] `formatValue` end to end: option, `ValueFormatter`, canvas, tooltip, hidden text in place, pop snapshots, React wrapper (AC-1 to AC-6)
-   - [ ] `minTextSize` and the fit: option, value width fit, cache key and bound (AC-8, AC-9, AC-10a, AC-12)
-   - [ ] Value on image bubbles (AC-7)
-   - [ ] Docs, fixtures, and budgets (AC-10, AC-10b, AC-11)
-- [ ] Verify it: `/check verify value format, image values, minimum text`
-- [ ] Test it: `/test value format, image values, minimum text`
+- [x] Build it: `/develop value format, image values, minimum text`
+   - [x] `formatValue` end to end: option, `ValueFormatter`, canvas, tooltip, hidden text in place, pop snapshots, React wrapper (AC-1 to AC-6)
+   - [x] `minTextSize` and the fit: option, value width fit, cache key and bound (AC-8, AC-9, AC-10a, AC-12)
+   - [x] Value on image bubbles (AC-7)
+   - [x] Docs, fixtures, and budgets (AC-10, AC-10b, AC-11)
+- [x] Verify it: `/check verify value format, image values, minimum text`
+- [x] Test it: `/test value format, image values, minimum text`
 Spec [0007](../specs/0007-value-format-and-text-size/index.md) · code in `app/renderer/`, `app/core/`, and `app/react/`
 
 ## Slice 3: Launch kit

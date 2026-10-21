@@ -17,8 +17,10 @@ import { useLatest } from "./useLatest";
  * - `data` is applied with `setData` whenever its reference changes. Keep it
  *   stable (for example with `useMemo`) to avoid needless updates.
  * - Callbacks (`onOrbClick`, `onOrbHover`, `onDataIssue`, `onOrbPop`,
- *   `onOrbRestore`) can
- *   change on every render. The newest one always runs, and a change causes no chart update.
+ *   `onOrbRestore`) and `formatValue` can change on every render. The newest
+ *   one always runs, and a change causes no chart update. A new `formatValue`
+ *   shows from the next draw, so a paused chart shows it only after its next
+ *   draw (for example after a `data` change).
  * - Keep `data` stable: a new array on a parent re render calls `setData`,
  *   which forgets the popped bubbles and brings their ids back as new ones.
  * - Config values are compared by value, and `colorScheme` item by item, so
@@ -88,6 +90,7 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
       onDataIssue,
       onOrbPop,
       onOrbRestore,
+      formatValue,
       ...config
     } = rest;
     const containerRef = useRef<HTMLDivElement>(null);
@@ -102,7 +105,9 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
       onDataIssue,
       onOrbPop,
       onOrbRestore,
+      formatValue,
     });
+    const warnedFormat = useRef(false);
 
     useImperativeHandle(
       ref,
@@ -133,6 +138,17 @@ export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
         onDataIssue: (issues) => callbacks.current.onDataIssue?.(issues),
         onOrbPop: (orb) => callbacks.current.onOrbPop?.(orb),
         onOrbRestore: (orb) => callbacks.current.onOrbRestore?.(orb),
+        formatValue: (value, orb) => {
+          const latest: unknown = callbacks.current.formatValue;
+          if (typeof latest === "function") return latest(value, orb);
+          if (latest !== undefined && !warnedFormat.current) {
+            warnedFormat.current = true;
+            console.warn(
+              "OrbFlow: formatValue must be a function, using the plain number.",
+            );
+          }
+          return String(value);
+        },
       });
       chartRef.current = chart;
       appliedConfig.current = config;

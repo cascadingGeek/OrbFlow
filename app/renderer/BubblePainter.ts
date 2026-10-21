@@ -19,6 +19,8 @@ export interface Bubble {
   color?: string;
   label: string;
   value: number;
+  /** The text drawn for the value; `""` hides it. */
+  valueText: string;
   /** A loaded image, or `undefined` to draw the bubble without one. */
   image?: HTMLImageElement;
 }
@@ -29,6 +31,8 @@ export interface Look {
   /** Start angle of the soap film, in radians. */
   filmAngle: number;
   fontFamily: string;
+  /** Text smaller than this is not drawn. */
+  minTextSize: number;
 }
 
 const K = 0.7;
@@ -122,9 +126,18 @@ export class BubblePainter {
 
   /** Draws the fitted label and value (layer 10), faded by `alpha`. */
   label(ctx: CanvasRenderingContext2D, b: Bubble, look: Look, alpha = 1) {
-    const value = b.image ? null : `${b.value}%`;
+    const value = b.valueText || null;
     const family = look.fontFamily;
-    const fit = this.fitter.fit(ctx, family, b.r, b.label, value, !!b.image);
+    const { minTextSize } = look;
+    const fit = this.fitter.fit(
+      ctx,
+      family,
+      b.r,
+      b.label,
+      value,
+      !!b.image,
+      minTextSize,
+    );
     if (!fit) return;
     const dark = look.theme === "dark";
     ctx.save();
@@ -149,6 +162,11 @@ export class BubblePainter {
       text(value, "600", fit.valueSize, fit.valueDy);
     }
     ctx.restore();
+  }
+
+  /** Sizes the text measure cache for a frame of `bubbles` bubbles. */
+  reserve(bubbles: number) {
+    this.fitter.reserve(bubbles);
   }
 
   /** The bubble color, parsed once; unparsable colors use blue. */

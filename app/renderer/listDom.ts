@@ -6,11 +6,38 @@ export const HIDDEN_STYLE =
   "border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);" +
   "white-space:nowrap;";
 
-/** What a screen reader hears for an orb: label, value, and any category. */
-export function buttonText(orb: Orb): string {
+/** One button in the list, with the orb it stands for. */
+export interface Entry {
+  li: HTMLLIElement;
+  button: HTMLButtonElement;
+  orb: Orb;
+}
+
+export const randomId = () =>
+  `orbflow-desc-${Math.random().toString(36).slice(2, 10)}`;
+
+/** A list item holding one empty button, out of the tab order. */
+export function newItem() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.tabIndex = -1;
+  const li = document.createElement("li");
+  li.appendChild(button);
+  return { li, button };
+}
+
+/**
+ * What a screen reader hears for an orb: label, value text, and any category.
+ * `valueText` is what the canvas shows; `""` leaves the value out.
+ */
+export function buttonText(
+  orb: Orb,
+  valueText: string = String(orb.value),
+): string {
   const category = orb.metadata?.category;
   return (
-    `${orb.label || orb.id}, value ${orb.value}` +
+    (orb.label || orb.id) +
+    (valueText ? `, value ${valueText}` : "") +
     (category ? `, category ${String(category)}` : "")
   );
 }

@@ -48,3 +48,10 @@ export class EntranceGate {
     this.observer = null;
   }
 }
+
+/** Calls `onResize` when `el` changes size. Returns a function that stops it. */
+export function watchResize(el: Element, onResize: () => void): () => void {
+  const observer = new ResizeObserver(() => onResize());
+  observer.observe(el);
+  return () => observer.disconnect();
+}

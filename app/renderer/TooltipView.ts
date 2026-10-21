@@ -20,10 +20,14 @@ export class TooltipView {
   private key = "";
   private current: TooltipOwner | null = null;
   private fade = true;
+  private shown: Orb | null = null;
 
+  /** `valueTextOf` gives the value text the canvas draws for an orb. */
   constructor(
     private readonly container: HTMLElement,
     private readonly getBounds: () => TooltipBounds,
+    private readonly valueTextOf: (orb: Orb) => string = (orb) =>
+      String(orb.value),
   ) {}
 
   /** Who is showing the tooltip now, or `null` when it is hidden. */
@@ -86,6 +90,11 @@ export class TooltipView {
     if (this.el && this.key !== this.keyOf(orb)) this.fill(orb);
   }
 
+  /** Rewrites the open tooltip when its text changed since it was filled. */
+  refreshOpen() {
+    if (this.current && this.shown) this.refill(this.shown);
+  }
+
   /** Hides the tooltip, but only for the owner that showed it. */
   hide(owner: TooltipOwner) {
     if (this.current !== owner) return;
@@ -101,7 +110,8 @@ export class TooltipView {
   }
 
   private keyOf(orb: Orb): string {
-    return `${orb.label}\n${orb.value}\n${String(orb.metadata?.category ?? "")}`;
+    const value = this.valueTextOf(orb);
+    return `${orb.label}\n${value}\n${String(orb.metadata?.category ?? "")}`;
   }
 
   private fill(orb: Orb) {
@@ -109,8 +119,13 @@ export class TooltipView {
     // Orb data is user supplied: set it as text, never as HTML.
     const lines = [
       this.line(orb.label, "font-weight: 600; margin-bottom: 2px;"),
-      this.line(`Value: ${orb.value}`, "font-size: 12px; opacity: 0.8;"),
     ];
+    const value = this.valueTextOf(orb);
+    if (value) {
+      lines.push(
+        this.line(`Value: ${value}`, "font-size: 12px; opacity: 0.8;"),
+      );
+    }
     if (orb.metadata?.category) {
       lines.push(
         this.line(
@@ -121,6 +136,7 @@ export class TooltipView {
     }
     this.el.replaceChildren(...lines);
     this.key = this.keyOf(orb);
+    this.shown = orb;
   }
 
   private line(text: string, style: string): HTMLDivElement {

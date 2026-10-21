@@ -521,4 +521,75 @@ describe("<OrbChart> behavior", () => {
       );
     });
   });
+
+  describe("formatValue and minTextSize (spec 0007 AC-6, AC-9)", () => {
+    const buttonTexts = (container: HTMLElement) =>
+      [...container.querySelectorAll("button")].map((b) => b.textContent);
+
+    it("runs the newest formatter with no updateConfig and no new chart", () => {
+      const { container, rerender } = render(
+        <OrbChart {...props({ formatValue: (v) => `$${v}` })} />,
+      );
+      expect(buttonTexts(container)).toEqual([
+        "Alpha, value $40",
+        "Beta, value $25",
+      ]);
+      updateConfig.mockClear();
+      const canvas = container.querySelector("canvas");
+
+      rerender(<OrbChart {...props({ formatValue: (v) => `${v} ms` })} />);
+      expect(updateConfig).not.toHaveBeenCalled();
+      expect(container.querySelector("canvas")).toBe(canvas);
+
+      // New data reaches the hidden text through the newest formatter.
+      rerender(
+        <OrbChart
+          {...props({
+            data: [{ id: "a", label: "Alpha", value: 41 }],
+            formatValue: (v) => `${v} ms`,
+          })}
+        />,
+      );
+      expect(buttonTexts(container)).toEqual(["Alpha, value 41 ms"]);
+    });
+
+    it("uses the plain number with no formatValue, and when it is removed", () => {
+      const { container, rerender } = render(
+        <OrbChart {...props({ formatValue: (v) => `$${v}` })} />,
+      );
+      rerender(<OrbChart {...props()} />);
+      frames.step();
+      expect(buttonTexts(container)).toEqual([
+        "Alpha, value 40",
+        "Beta, value 25",
+      ]);
+    });
+
+    it("warns once for a formatValue that is not a function and uses the plain number", () => {
+      const warn = jest
+        .spyOn(console, "warn")
+        .mockImplementation(() => undefined);
+      const bad = "nope" as unknown as OrbChartProps["formatValue"];
+      const { container } = render(
+        <OrbChart {...props({ formatValue: bad })} />,
+      );
+      frames.step(3);
+      expect(buttonTexts(container)).toEqual([
+        "Alpha, value 40",
+        "Beta, value 25",
+      ]);
+      expect(
+        warn.mock.calls.filter((c) => String(c[0]).includes("formatValue")),
+      ).toHaveLength(1);
+    });
+
+    it("passes a changed minTextSize to updateConfig as a plain value", () => {
+      const { rerender } = render(<OrbChart {...props({ minTextSize: 8 })} />);
+      updateConfig.mockClear();
+      rerender(<OrbChart {...props({ minTextSize: 8 })} />);
+      expect(updateConfig).not.toHaveBeenCalled();
+      rerender(<OrbChart {...props({ minTextSize: 6 })} />);
+      expect(updateConfig).toHaveBeenCalledWith({ minTextSize: 6 });
+    });
+  });
 });

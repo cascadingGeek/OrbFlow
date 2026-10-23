@@ -1,6 +1,10 @@
 # Orb Flow 🫧
 
-A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas. Bubbles look like real soap bubbles, float, push each other apart, react to clicks and taps, and can burst into droplets. The core has zero runtime dependencies, and a React component is included.
+A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas. Bubbles look like real soap bubbles, rise in from below, float, push each other apart, react to clicks and taps, and can burst into droplets and come back. It works for any "how much of each thing" data: tickets by tag, revenue by product, votes per feature, or market moves. The core has zero runtime dependencies, and a React component is included.
+
+> **Status: in development, not released yet.** Version 1.0 is not on npm yet, so `npm install orbflow` and the CDN link below will work once it is published. Until then you can [build it from source](#before-the-npm-release-build-from-source). Follow the progress on [Threads](https://www.threads.com/@cascadinggeek).
+
+**Contents:** [Features](#features) · [Installation](#installation) · [Quick start](#quick-start) · [Next.js](#nextjs) · [Showing details](#showing-details-when-a-bubble-is-clicked) · [Popping](#popping-bubbles) · [Formatting values](#formatting-values) · [Recipes](#recipes) · [API reference](#api-reference) · [Performance](#performance) · [Known limitations](#known-limitations) · [Development](#development) · [Roadmap](#roadmap)
 
 ## Features
 
@@ -43,12 +47,13 @@ A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas
 - Respects the system "reduce motion" setting: bubbles settle once and stay still, and a pop happens at once, with no burst.
 - Each pop is announced to screen readers ("BTC popped"), and keyboard focus moves to the next bubble.
 
-**Production ready**
+**Built for real apps**
 
 - Works with vanilla JavaScript and React 18 or 19, including server rendered React and strict mode.
 - Fills its container and redraws on resize, with sharp drawing on high density screens.
 - `destroy()` removes every listener, observer, and element, and is safe to call twice.
-- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 14 kB gzip.
+- ESM, CommonJS, and a CDN script build, with TypeScript types. The core is about 15 kB gzip, the React entry about 16 kB.
+- If the chart cannot start (for example, no canvas support), the React component throws to your nearest error boundary, so you can show a fallback.
 
 ## Installation
 
@@ -59,6 +64,26 @@ yarn add orbflow
 # or
 pnpm add orbflow
 ```
+
+React (18 or 19) is an optional peer dependency: you only need it for `orbflow/react`. The core has no dependencies at all.
+
+### Before the npm release: build from source
+
+```bash
+git clone https://github.com/cascadingGeek/OrbFlow.git
+cd OrbFlow
+npm install
+npm run build
+npm pack            # creates orbflow-1.0.0.tgz
+```
+
+Then, in your app:
+
+```bash
+npm install /path/to/OrbFlow/orbflow-1.0.0.tgz
+```
+
+The imports are the same as after the release (`orbflow` and `orbflow/react`).
 
 ## Quick start
 
@@ -119,7 +144,9 @@ function App() {
 - Config props are compared by value, so inline objects and arrays cost nothing.
 - A config prop that becomes `undefined` keeps its last value. Pass an explicit value to change it.
 
-**Server rendering.** The component renders an empty `div` on the server and creates the canvas after mount. In the Next.js App Router, render it from a Client Component (a file that starts with `"use client"`) when you pass callbacks.
+**Server rendering.** The component renders an empty `div` on the server and creates the canvas after mount, so it is safe with server rendering, hydration, and strict mode. See [Next.js](#nextjs) for the App Router.
+
+**Errors.** If the chart cannot start, the component throws to the nearest error boundary. Wrap it in one to show a fallback, such as a table of the same data.
 
 **Controlling the chart from React.** A ref gives you `start()`, `pause()`, `getData()`, `pop(id)`, and `restore(id?)`:
 
@@ -135,6 +162,8 @@ const ref = useRef<OrbChartHandle>(null);
 
 ### CDN (no build step)
 
+Available once 1.0 is on npm. Before that, use `dist/orbflow.iife.js` from a source build.
+
 ```html
 <div id="chart" style="width: 800px; height: 600px"></div>
 <script src="https://unpkg.com/orbflow/dist/orbflow.iife.js"></script>
@@ -143,6 +172,73 @@ const ref = useRef<OrbChartHandle>(null);
   chart.setData([{ id: "a", label: "A", value: 10 }]);
 </script>
 ```
+
+## Next.js
+
+OrbFlow works with the App Router and the Pages Router, with no special config. `orbflow/react` already starts with `"use client"`, and on the server it renders a single empty `div`, so you do **not** need `next/dynamic` with `ssr: false`.
+
+Fetch data in a Server Component, and put the chart with its callbacks in a Client Component (functions cannot be passed from a Server Component to a Client Component):
+
+```tsx
+// app/markets/MarketBubbles.tsx
+"use client";
+
+import { useMemo, useState } from "react";
+import { OrbChart, type OrbDataInput } from "orbflow/react";
+import { geistSans } from "@/lib/fonts"; // a next/font font
+
+export function MarketBubbles({ markets }: { markets: Market[] }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Stable data: a new array reference applies new data.
+  const data = useMemo<OrbDataInput[]>(
+    () =>
+      markets.map((m) => ({
+        id: m.symbol,
+        label: m.symbol,
+        value: Math.abs(m.change),
+        color: m.change >= 0 ? "#22c55e" : "#ef4444",
+        imageUrl: `/logos/${m.symbol.toLowerCase()}.png`, // from /public
+        metadata: { change: m.change },
+      })),
+    [markets],
+  );
+
+  return (
+    <div className="h-[520px]">
+      <OrbChart
+        data={data}
+        backgroundColor="transparent"
+        theme="dark"
+        fontFamily={geistSans.style.fontFamily}
+        formatValue={(_, orb) => `${Number(orb.metadata?.change).toFixed(1)}%`}
+        popOnClick
+        ariaLabel="Market moves"
+        onOrbClick={(orb) => setSelectedId(orb.id)}
+      />
+    </div>
+  );
+}
+```
+
+```tsx
+// app/markets/page.tsx (a Server Component)
+import { MarketBubbles } from "./MarketBubbles";
+
+export default async function Page() {
+  const markets = await getMarkets();
+  return <MarketBubbles markets={markets} />;
+}
+```
+
+A chart with plain props only (no callbacks, no ref) can be rendered directly from a Server Component.
+
+Things to get right in Next.js:
+
+- **Give the parent a height** (`h-[520px]`, a sized grid cell, or `size-full` inside a sized box). The chart fills its parent.
+- **Fonts:** pass the real family name from `next/font` (`geistSans.style.fontFamily`), not a CSS variable; the canvas cannot read CSS variables. Mount the chart after fonts load (see [Wait for your font](#wait-for-your-font)).
+- **Transparent background:** with `backgroundColor="transparent"`, set `theme` yourself, since `"auto"` cannot see the page behind the chart.
+- **Images:** serve them from `/public` or a host that sends CORS headers. `next/image` is not used; the canvas needs a plain URL.
 
 ## Showing details when a bubble is clicked
 
@@ -218,6 +314,137 @@ chart.restore("btc"); // true if "btc" was popped and is not live, false otherwi
 ### Entering bubbles
 
 New bubbles rise from below the bottom edge, in a loose stagger, once the chart first scrolls into view. Set `enterStyle: "grow"` for the older grow in. A paused or still chart, and `transitionDuration: 0`, show bubbles in place with no motion.
+
+## Recipes
+
+### Wait for your font
+
+The chart measures label text with whatever font is loaded when it first draws, and keeps those measurements. If your web font loads later, labels can be sized for the fallback font. Mount the chart once fonts are ready:
+
+```tsx
+const [fontsReady, setFontsReady] = useState(false);
+
+useEffect(() => {
+  let live = true;
+  document.fonts.ready.then(() => live && setFontsReady(true));
+  return () => {
+    live = false;
+  };
+}, []);
+
+return fontsReady ? <OrbChart data={data} fontFamily={font} /> : <Loading />;
+```
+
+### Pause when off screen or hidden
+
+The chart keeps animating while it is off screen. Pause it yourself with an `IntersectionObserver`, and when your UI hides it (for example, a table view):
+
+```tsx
+const chart = useRef<OrbChartHandle>(null);
+const box = useRef<HTMLDivElement>(null);
+const [onScreen, setOnScreen] = useState(true);
+
+useEffect(() => {
+  const node = box.current;
+  if (!node) return;
+  const observer = new IntersectionObserver(([entry]) =>
+    setOnScreen(entry.isIntersecting),
+  );
+  observer.observe(node);
+  return () => observer.disconnect();
+}, []);
+
+const running = visible && onScreen; // `visible`: your own view state
+useEffect(() => {
+  if (running) chart.current?.start();
+  else chart.current?.pause();
+}, [running]);
+
+return (
+  <div ref={box} className="size-full">
+    <OrbChart ref={chart} data={data} />
+  </div>
+);
+```
+
+A paused chart draws nothing until something changes, and data or option changes still show as one still frame.
+
+### Keep the selected bubble popped while a drawer is open
+
+Pop the bubble the drawer shows, and bring everything back when the drawer closes. This also works when the drawer was opened from somewhere else, such as a table row:
+
+```tsx
+<OrbChart
+  ref={chart}
+  data={data}
+  popOnClick
+  restoreOnNextPop={false} // the drawer decides when bubbles come back
+  onOrbClick={(orb) => openDrawer(orb.id)}
+/>;
+
+// Re-pop after new data, since setData brings popped bubbles back.
+useEffect(() => {
+  if (open && selectedId) chart.current?.pop(selectedId);
+}, [data, open, selectedId]);
+
+useEffect(() => {
+  if (!open) chart.current?.restore();
+}, [open]);
+```
+
+`pop` and `restore` return `false` when there is nothing to do (already popped, not on the chart, or not mounted), so these effects are safe to run often.
+
+### Size by one number, show another
+
+`value` sets the bubble size and must be 0 or more. To size by the size of a change but show its sign, put the real number in `metadata` and format it:
+
+```tsx
+const data = rows.map((r) => ({
+  id: r.id,
+  label: r.name,
+  value: Math.abs(r.change),
+  color: r.change >= 0 ? "#22c55e" : "#ef4444",
+  metadata: { change: r.change },
+}));
+
+<OrbChart
+  data={data}
+  formatValue={(_, orb) => {
+    const change = Number(orb.metadata?.change);
+    return `${change > 0 ? "+" : ""}${change.toFixed(2)}%`;
+  }}
+/>;
+```
+
+### Show a fallback when the chart cannot start
+
+```tsx
+class ChartBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+<ChartBoundary fallback={<DataTable rows={rows} />}>
+  <OrbChart data={data} />
+</ChartBoundary>;
+```
+
+### Log skipped data
+
+```tsx
+<OrbChart
+  data={data}
+  onDataIssue={(issues) => console.warn("OrbFlow skipped entries", issues)}
+/>
+```
 
 ## API reference
 
@@ -319,23 +546,48 @@ new OrbChart("#chart", {
 - In React, `formatValue` can change on every render. The newest function runs on the next draw and causes no update.
 - Long text shrinks to fit the bubble, and is hidden when it would be under `minTextSize`. Image bubbles draw their value too, when the radius is at least 30 px.
 
+## Performance
+
+- Each bubble draws about ten gradients per frame. A few dozen bubbles stay smooth on a modern laptop. On older hardware (a 2015 dual core laptop in our tests), about 10 to 15 bubbles with images stay smooth.
+- Fewer, larger bubbles are cheaper than many small ones. Lower `maxRadius` on small screens.
+- Pause the chart when it is off screen ([recipe](#pause-when-off-screen-or-hidden)).
+- In React, keep `data` stable (`useMemo` or state), so a render does not send new data.
+
 ## Known limitations
 
 - With no `formatValue`, the value is the plain number, with no rounding, so a float such as `0.1 + 0.2` shows as `0.30000000000000004`. Format floats yourself.
 - `formatValue` runs once per bubble per drawn frame, so keep it cheap. It must not call `updateConfig` or `setData`, and must not change the orb it receives.
 - `theme: "auto"` treats `"transparent"`, named colors (like `"white"`), and `hsl()` as dark. On a light page behind a transparent chart, set `theme: "light"`.
 - Labels look best in a rounded font, but the chart cannot load fonts. Load one on your page and pass it as `fontFamily`.
+- Text is measured with the font loaded at the first draw, and the measurements are kept. Mount the chart after your font loads ([recipe](#wait-for-your-font)).
 - The soap film and crescent are canvas approximations of the design and do not match it pixel for pixel. Browsers without `createConicGradient` skip the film.
 - Popped bubbles are remembered until the next `setData` or `destroy()`, with no time limit.
 - Bubbles still collide at their resting place while they rise, so a neighbor can be nudged by a bubble you cannot see yet. New bubbles pick the least crowded of a few random places to keep this small.
-- The chart keeps running while it is off screen. Pausing it there is planned.
+- The chart keeps running while it is off screen. Pausing it there automatically is planned; until then, use the [recipe](#pause-when-off-screen-or-hidden).
 - Each bubble draws about ten gradients per frame. Very large charts may drop frames; a faster drawing cache is planned.
 
 ## Browser support
 
 Current versions of Chrome, Edge, Firefox, and Safari (ES2020, Pointer Events, and `ResizeObserver`). Node 18 or newer for server rendering.
 
+## Development
+
+```bash
+npm install            # install, and set up the pre commit hook
+npm run dev            # watch build
+npm run build          # build dist/
+npm test               # unit tests (Jest)
+npm run test:e2e       # builds, then runs the browser tests (Playwright, Chromium)
+npm run lint           # ESLint
+npm run typecheck      # tsc
+npm run check:package  # publint, attw, and the dist check (after a build)
+npm run size           # size budgets (after a build)
+npm run smoke          # packs the tarball and installs it into test projects
+```
+
 ## Roadmap
+
+Before 1.0: docs and API reference, runnable examples, a live demo page, a speed pass for large charts (including pausing off screen), and the npm release.
 
 Version 1.0 supports vanilla JavaScript and React. More frameworks arrive one per minor release, with no breaking changes:
 
@@ -343,8 +595,6 @@ Version 1.0 supports vanilla JavaScript and React. More frameworks arrive one pe
 - **1.2**: Svelte
 - **1.3**: Angular
 
-Bubble look and behavior improvements are tracked in [UPDATE.md](UPDATE.md).
-
 ## License
 
-MIT © [cascadingGeek]
+MIT © cascadingGeek

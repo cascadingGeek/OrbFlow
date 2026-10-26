@@ -1,12 +1,16 @@
 /**
  * @jest-environment jsdom
  */
-import { BubblePainter, type Bubble, type Look } from "./BubblePainter";
+import {
+  BubblePainter,
+  type Bubble,
+  type Look,
+} from "../../../../app/renderer/canvas/BubblePainter";
 import {
   defined,
   installFakeCanvas,
   type FakeContext,
-} from "../test-support/fakeDom";
+} from "../../../support/fakeDom";
 
 describe("BubblePainter (AC-6, AC-7)", () => {
   const dark: Look = {

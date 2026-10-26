@@ -11,8 +11,12 @@ import {
   type Ref,
 } from "react";
 import { render } from "@testing-library/react";
-import { OrbChart, type OrbChartHandle, type OrbChartProps } from "./OrbChart";
-import { OrbChart as OrbChartCore } from "../core/OrbChart";
+import {
+  OrbChart,
+  type OrbChartHandle,
+  type OrbChartProps,
+} from "../../../app/react/OrbChart";
+import { OrbChart as OrbChartCore } from "../../../app/core/OrbChart";
 import {
   FakeResizeObserver,
   dispatchMouse,
@@ -22,7 +26,7 @@ import {
   setElementSize,
   trackListeners,
   type FakeContext,
-} from "../test-support/fakeDom";
+} from "../../support/fakeDom";
 
 const data = [
   { id: "a", label: "Alpha", value: 40 },

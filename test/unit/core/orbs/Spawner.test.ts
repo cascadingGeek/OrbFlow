@@ -1,5 +1,5 @@
-import { Spawner } from "./Spawner";
-import type { Orb } from "../types/types";
+import { Spawner } from "../../../../app/core/orbs/Spawner";
+import type { Orb } from "../../../../app/types/types";
 
 const orb = (x: number, y: number, radius: number): Orb => ({
   id: `${x},${y}`,

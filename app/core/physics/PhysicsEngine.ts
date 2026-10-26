@@ -1,8 +1,6 @@
-import { Orb, PhysicsConfig } from "../types/types";
+import type { Orb, PhysicsConfig } from "../../types/types";
 
-/**
- * Spatial Grid for optimized collision detection
- */
+/** Buckets orbs by cell so collisions only check neighbors. */
 class SpatialGrid {
   private grid: Map<string, Orb[]> = new Map();
   private cellSize: number;
@@ -46,9 +44,7 @@ class SpatialGrid {
   }
 }
 
-/**
- * Core physics engine for orb simulation with bubble physics
- */
+/** Moves, bounces, and separates orbs each frame. */
 export class PhysicsEngine {
   private spatialGrid: SpatialGrid;
   private width: number;
@@ -62,10 +58,9 @@ export class PhysicsEngine {
     this.height = height;
     this.spatialGrid = new SpatialGrid();
 
-    // Updated for bubble feel
-    this.damping = config.damping ?? 0.95; // More friction for bubble feel
+    this.damping = config.damping ?? 0.95;
     this.minVelocity = config.minVelocity ?? 0.01;
-    this.bounceCoefficient = config.bounceCoefficient ?? 0.6; // Softer bounces
+    this.bounceCoefficient = config.bounceCoefficient ?? 0.6;
   }
 
   updateDimensions(width: number, height: number) {
@@ -101,7 +96,7 @@ export class PhysicsEngine {
   }
 
   private updatePosition(orb: Orb, drift: boolean) {
-    // Add subtle organic movement (brownian motion)
+    // Subtle brownian drift.
     if (drift) {
       orb.vx += (Math.random() - 0.5) * 0.02;
       orb.vy += (Math.random() - 0.5) * 0.02;
@@ -118,7 +113,7 @@ export class PhysicsEngine {
       orb.vy *= this.damping;
     }
 
-    // Cap max velocity to prevent chaotic bubbles
+    // Cap the speed so bubbles never turn chaotic.
     const maxSpeed = 2;
     const speed = Math.sqrt(orb.vx ** 2 + orb.vy ** 2);
     if (speed > maxSpeed) {
@@ -132,7 +127,7 @@ export class PhysicsEngine {
 
     if (orb.x < margin) {
       orb.x = margin;
-      orb.vx = Math.abs(orb.vx) * this.bounceCoefficient + 0.5; // Add push off wall
+      orb.vx = Math.abs(orb.vx) * this.bounceCoefficient + 0.5; // push off the wall
     } else if (orb.x > this.width - margin) {
       orb.x = this.width - margin;
       orb.vx = -Math.abs(orb.vx) * this.bounceCoefficient - 0.5;
@@ -154,7 +149,6 @@ export class PhysicsEngine {
     const minDistance = a.radius + b.radius;
 
     if (distance < minDistance && distance > 0) {
-      // Separate the orbs
       const overlap = (minDistance - distance) * 0.5;
       const separationX = (dx / distance) * overlap;
       const separationY = (dy / distance) * overlap;
@@ -164,8 +158,8 @@ export class PhysicsEngine {
       b.x += separationX;
       b.y += separationY;
 
-      // Apply subtle bounce - just push them apart gently
-      const pushStrength = 0.3; // Reduced from full collision response
+      // A gentle push apart instead of a full collision response.
+      const pushStrength = 0.3;
       a.vx -= (dx / distance) * pushStrength;
       a.vy -= (dy / distance) * pushStrength;
       b.vx += (dx / distance) * pushStrength;
@@ -173,9 +167,10 @@ export class PhysicsEngine {
     }
   }
 
-  // Pushes orbs away from a point. Takes the orbs like update(), so the
-  // engine holds no orb list of its own that could drift out of date.
-  // `strength` is the push right at the point; 2 for a click, 1 for a pop.
+  /**
+   * Pushes orbs away from a point; `strength` is the push at the point
+   * (2 for a click, 1 for a pop), fading to 0 at `radius`.
+   */
   applyMouseRepulsion(
     orbs: Orb[],
     mouseX: number,
@@ -189,7 +184,7 @@ export class PhysicsEngine {
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance < radius && distance > 0) {
-        const force = (1 - distance / radius) * strength; // Stronger when closer
+        const force = (1 - distance / radius) * strength;
         orb.vx += (dx / distance) * force;
         orb.vy += (dy / distance) * force;
       }

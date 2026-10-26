@@ -1,31 +1,19 @@
 /**
  * @jest-environment jsdom
  */
+import "../../support/serverGlobals";
 import { act } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { TextDecoder, TextEncoder } from "node:util";
-import { OrbChart } from "./OrbChart";
+import { renderToString } from "react-dom/server";
+import { OrbChart } from "../../../app/react/OrbChart";
 import {
   installFakeCanvas,
   installFakeResizeObserver,
   installFrameQueue,
-} from "../test-support/fakeDom";
-
-// A channel that never opens a port, so no handle is left running.
-function StubChannel(this: { port1: object; port2: object }) {
-  this.port1 = { postMessage: () => undefined };
-  this.port2 = {};
-}
+} from "../../support/fakeDom";
 
 describe("<OrbChart> hydration (AC-2, AC-12)", () => {
   it("hydrates server markup without a mismatch and adds one canvas", async () => {
-    // jsdom lacks these, which the server renderer needs when loaded.
-    Object.assign(globalThis, {
-      TextEncoder,
-      TextDecoder,
-      MessageChannel: StubChannel,
-    });
-    const { renderToString } = await import("react-dom/server");
     installFakeCanvas();
     installFakeResizeObserver();
     installFrameQueue();

@@ -23,7 +23,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ["app/react/**/*.{ts,tsx}"],
+    files: ["test/**/*.{ts,tsx}"],
+    languageOptions: { globals: { ...globals.browser, ...globals.jest } },
+  },
+  {
+    files: ["app/react/**/*.{ts,tsx}", "test/**/react/**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
     rules: {
       "react-hooks/rules-of-hooks": "error",

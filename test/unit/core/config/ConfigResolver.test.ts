@@ -1,4 +1,4 @@
-import { ConfigResolver } from "./ConfigResolver";
+import { ConfigResolver } from "../../../../app/core/config/ConfigResolver";
 
 describe("ConfigResolver", () => {
   const resolver = new ConfigResolver();

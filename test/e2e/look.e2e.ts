@@ -1,10 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { openChart, place, recording, resetRecording } from "./helpers";
 
 // The bubble look, drawn by the built bundle in real Chrome (spec 0005).
 
 /** Redraws a paused chart once and returns what that draw recorded. */
-async function redraw(page: import("@playwright/test").Page) {
+async function redraw(page: Page) {
   await resetRecording(page);
   await page.evaluate(() => window.chart.updateConfig({ ariaLabel: "redraw" }));
   return recording(page);

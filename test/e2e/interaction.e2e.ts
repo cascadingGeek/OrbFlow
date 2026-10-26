@@ -1,11 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { SPOTS, THREE, onCanvas, openChart, place } from "./helpers";
 
 // Pointer, keyboard, and screen reader behavior in real Chrome (spec 0005).
 
-const cursor = (page: import("@playwright/test").Page) =>
+const cursor = (page: Page) =>
   page.locator("canvas").evaluate((c) => (c as HTMLCanvasElement).style.cursor);
-const velocities = (page: import("@playwright/test").Page) =>
+const velocities = (page: Page) =>
   page.evaluate(() => window.chart.getData().map((o) => [o.vx, o.vy]));
 
 test.beforeEach(async ({ page }) => {

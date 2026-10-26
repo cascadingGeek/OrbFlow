@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { OrbChart, type OrbChartHandle } from "../../dist/react.mjs";
+import { OrbChart, type OrbChartHandle } from "../../../dist/react.mjs";
 
 declare global {
   interface Window {

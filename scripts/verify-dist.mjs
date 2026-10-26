@@ -66,10 +66,8 @@ for (const file of jsFiles) {
   }
 }
 
-// Sourcemaps: every JavaScript file with code of its own has a map with
-// embedded sources (AC-9). A pure re export entry (only import, export, and
-// require lines pointing at a chunk) has no original code, so the bundler
-// emits no map for it; the chunk it points to carries the map instead.
+// Sourcemaps (AC-9): every JavaScript file with code of its own has a map.
+// A pure re export entry has none; the chunk it points to carries it.
 const reExportLine = [
   /^export \{[^}]*\} from "\.\/chunk-[\w-]+\.mjs";$/,
   /^Object\.defineProperty\(exports, Symbol\.toStringTag, \{ value: "Module" \}\);$/,

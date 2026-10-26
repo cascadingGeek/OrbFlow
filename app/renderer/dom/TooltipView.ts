@@ -1,19 +1,17 @@
-import type { Orb } from "../types/types";
+import type { Orb } from "../../types/types";
 
 /** Who showed the tooltip. Only the owner can hide it. */
-export type TooltipOwner = "pointer" | "focus";
+type TooltipOwner = "pointer" | "focus";
 
 /** The chart size the tooltip is clamped to. */
-export interface TooltipBounds {
+interface TooltipBounds {
   width?: number;
   height?: number;
 }
 
 /**
- * Creates, fills, places, and hides the tooltip element. The pointer and the
- * keyboard focus share it: the last one to show it owns it, and a hide from
- * anyone else is ignored. The element is hidden from assistive technology,
- * because the accessible list carries the same facts.
+ * Creates, fills, places, and hides the `aria-hidden` tooltip. Pointer and
+ * focus share it: the last one to show it owns it, and only it can hide it.
  */
 export class TooltipView {
   private el: HTMLDivElement | null = null;
@@ -102,7 +100,6 @@ export class TooltipView {
     this.current = null;
   }
 
-  /** Removes the element. */
   dispose() {
     this.el?.remove();
     this.el = null;

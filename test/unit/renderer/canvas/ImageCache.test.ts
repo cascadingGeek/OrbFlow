@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { ImageCache } from "./ImageCache";
+import { ImageCache } from "../../../../app/renderer/canvas/ImageCache";
 
 describe("ImageCache", () => {
   let images: HTMLImageElement[];

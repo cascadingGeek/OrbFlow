@@ -1,11 +1,11 @@
 /**
  * @jest-environment jsdom
  */
-import { EntranceGate } from "./EntranceGate";
+import { EntranceGate } from "../../../../app/renderer/dom/EntranceGate";
 import {
   FakeIntersectionObserver,
   installFakeIntersectionObserver,
-} from "../test-support/fakeDom";
+} from "../../../support/fakeDom";
 
 describe("EntranceGate (spec 0006 AC-3)", () => {
   let remove: () => void;

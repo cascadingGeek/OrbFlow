@@ -1,8 +1,11 @@
-import { ChartPopHost, type ChartPopParts } from "./ChartPopHost";
-import type { Orb } from "../types/types";
-import type { PopRecord } from "./PopLedger";
-import type { ResolvedConfig } from "./ConfigResolver";
-import type { PopSnapshot } from "../renderer/BurstEffects";
+import {
+  ChartPopHost,
+  type ChartPopParts,
+} from "../../../../app/core/pop/ChartPopHost";
+import type { Orb } from "../../../../app/types/types";
+import type { PopRecord } from "../../../../app/core/pop/PopLedger";
+import type { ResolvedConfig } from "../../../../app/core/config/ConfigResolver";
+import type { PopSnapshot } from "../../../../app/renderer/canvas/BurstEffects";
 
 const orb = (id: string): Orb => ({
   id,

@@ -1,4 +1,4 @@
-import type { OrbDataIssue } from "../types/types";
+import type { OrbDataIssue } from "../../types/types";
 
 /**
  * Warns about skipped entries and hands them to the `onDataIssue` handler.

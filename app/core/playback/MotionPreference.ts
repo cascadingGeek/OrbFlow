@@ -1,4 +1,4 @@
-import type { OrbChartConfig } from "../types/types";
+import type { OrbChartConfig } from "../../types/types";
 
 type Setting = NonNullable<OrbChartConfig["reducedMotion"]>;
 type MatchMedia = (query: string) => MediaQueryList;

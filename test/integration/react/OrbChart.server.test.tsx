@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { renderToString } from "react-dom/server";
-import { OrbChart } from "./OrbChart";
+import { OrbChart } from "../../../app/react/OrbChart";
 
 describe("<OrbChart> on the server (AC-1)", () => {
   it("renders one div with the class and style, no canvas, and no warning", () => {

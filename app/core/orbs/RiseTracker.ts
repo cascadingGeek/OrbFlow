@@ -1,5 +1,5 @@
-import type { Orb } from "../types/types";
-import type { ResolvedConfig } from "./ConfigResolver";
+import type { Orb } from "../../types/types";
+import type { ResolvedConfig } from "../config/ConfigResolver";
 
 /** What the tracker reads from the chart, looked up when it is used. */
 export interface RiseSettings {
@@ -28,10 +28,8 @@ interface Rise {
 }
 
 /**
- * Remembers which bubbles are rising from below the chart and how far down
- * each is drawn. A rising bubble keeps its real place; only the drawing moves.
- * Time is passed in from the animation loop clock, and `random` is injected so
- * tests can fix the stagger.
+ * Tracks bubbles rising from below the chart and how far down each is drawn.
+ * A rising bubble keeps its real place; only the drawing moves.
  */
 export class RiseTracker {
   private readonly rises = new Map<string, Rise>();
@@ -123,12 +121,10 @@ export class RiseTracker {
     return any;
   }
 
-  /** Forgets one bubble's rise. */
   forget(id: string) {
     this.rises.delete(id);
   }
 
-  /** Forgets everything. */
   clear() {
     this.rises.clear();
   }

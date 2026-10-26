@@ -1,10 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-import { CanvasInput, type InputConfig } from "./CanvasInput";
-import { TooltipView } from "./TooltipView";
-import { dispatchMouse, tap, trackListeners } from "../test-support/fakeDom";
-import type { Orb } from "../types/types";
+import {
+  CanvasInput,
+  type InputConfig,
+} from "../../../../app/renderer/dom/CanvasInput";
+import { TooltipView } from "../../../../app/renderer/dom/TooltipView";
+import { dispatchMouse, tap, trackListeners } from "../../../support/fakeDom";
+import type { Orb } from "../../../../app/types/types";
 
 const makeOrb = (id: string, x: number, y: number, radius = 30): Orb => ({
   id,

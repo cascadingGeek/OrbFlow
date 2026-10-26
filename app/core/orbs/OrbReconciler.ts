@@ -1,6 +1,6 @@
-import type { Orb, OrbDataInput } from "../types/types";
-import type { ResolvedConfig } from "./ConfigResolver";
-import type { PopRecord } from "./PopLedger";
+import type { Orb, OrbDataInput } from "../../types/types";
+import type { ResolvedConfig } from "../config/ConfigResolver";
+import type { PopRecord } from "../pop/PopLedger";
 import type { RadiusTweener } from "./RadiusTweener";
 import { Spawner, type Place } from "./Spawner";
 
@@ -51,11 +51,8 @@ export class OrbReconciler {
   }
 
   /**
-   * Applies the accepted entries to `current` and returns the new list:
-   * accepted entries in input order, then orbs that are exiting. `duration`
-   * overrides the configured transition length (0 makes every change snap).
-   * With `enterStyle` `"rise"`, a new orb starts at its target radius, in the
-   * least crowded of a few random places; with `"grow"` it grows from 0.
+   * Returns accepted entries in input order, then exiting orbs. `duration`
+   * overrides the transition length; 0 makes every change snap.
    */
   reconcile(
     current: Orb[],

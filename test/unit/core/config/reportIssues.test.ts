@@ -1,5 +1,5 @@
-import { reportIssues } from "./reportIssues";
-import type { OrbDataIssue } from "../types/types";
+import { reportIssues } from "../../../../app/core/config/reportIssues";
+import type { OrbDataIssue } from "../../../../app/types/types";
 
 describe("reportIssues", () => {
   const issue: OrbDataIssue = { index: 0, reason: "invalid-id" };

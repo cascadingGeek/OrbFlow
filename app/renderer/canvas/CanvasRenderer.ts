@@ -1,13 +1,13 @@
-import type { Orb, OrbChartConfig } from "../types/types";
+import type { Orb, OrbChartConfig } from "../../types/types";
 import { BubblePainter, type Look } from "./BubblePainter";
 import { BurstEffects } from "./BurstEffects";
 import { ImageCache } from "./ImageCache";
 import { drawFocusRing } from "./focusRing";
-import { ValueFormatter } from "./ValueFormatter";
+import { ValueFormatter } from "../ValueFormatter";
 import { resolveTheme } from "./color";
 
 /** The parts a renderer draws with. Each one is optional for tests. */
-export interface RendererParts {
+interface RendererParts {
   images?: ImageCache;
   /** Turns an orb's value into the text drawn for it. */
   values?: ValueFormatter;
@@ -184,7 +184,6 @@ export class CanvasRenderer {
     };
   }
 
-  /** Removes the canvas. */
   destroy() {
     this.canvas.remove();
   }

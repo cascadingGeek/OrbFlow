@@ -1,13 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-import { LabelFitter } from "./LabelFitter";
+import { LabelFitter } from "../../../../app/renderer/canvas/LabelFitter";
 import {
   FAKE_CHAR_WIDTH,
   defined,
   installFakeCanvas,
   type FakeContext,
-} from "../test-support/fakeDom";
+} from "../../../support/fakeDom";
 
 describe("LabelFitter (AC-4)", () => {
   let ctx: CanvasRenderingContext2D;

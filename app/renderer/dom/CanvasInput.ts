@@ -1,4 +1,4 @@
-import type { Orb, OrbChartConfig } from "../types/types";
+import type { Orb, OrbChartConfig } from "../../types/types";
 import type { TooltipView } from "./TooltipView";
 
 const TOUCH_TOOLTIP_MS = 2500;
@@ -10,7 +10,7 @@ export type InputConfig = Pick<
 >;
 
 /** What the input layer tells its owner. */
-export interface InputHooks {
+interface InputHooks {
   /** A click or tap landed on `orb`. */
   onActivate(orb: Orb, event: MouseEvent): void;
   /** A click or tap missed every orb, in canvas pixels. */

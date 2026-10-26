@@ -1,6 +1,6 @@
-import { OrbReconciler } from "./OrbReconciler";
-import { RadiusTweener } from "./RadiusTweener";
-import { ConfigResolver } from "./ConfigResolver";
+import { OrbReconciler } from "../../../../app/core/orbs/OrbReconciler";
+import { RadiusTweener } from "../../../../app/core/orbs/RadiusTweener";
+import { ConfigResolver } from "../../../../app/core/config/ConfigResolver";
 
 describe("OrbReconciler", () => {
   const config = new ConfigResolver().resolve(

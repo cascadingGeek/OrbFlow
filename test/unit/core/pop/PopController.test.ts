@@ -1,9 +1,12 @@
 /**
  * @jest-environment jsdom
  */
-import { PopController, type PopHost } from "./PopController";
-import { PopLedger } from "./PopLedger";
-import type { Orb } from "../types/types";
+import {
+  PopController,
+  type PopHost,
+} from "../../../../app/core/pop/PopController";
+import { PopLedger } from "../../../../app/core/pop/PopLedger";
+import type { Orb } from "../../../../app/types/types";
 
 const orb = (id: string, label = id.toUpperCase()): Orb => ({
   id,

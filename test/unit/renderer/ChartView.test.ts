@@ -1,15 +1,19 @@
 /**
  * @jest-environment jsdom
  */
-import { ChartView, type ViewConfig, type ViewHost } from "./ChartView";
+import {
+  ChartView,
+  type ViewConfig,
+  type ViewHost,
+} from "../../../app/renderer/ChartView";
 import {
   FakeResizeObserver,
   installFakeCanvas,
   installFakeResizeObserver,
   setElementSize,
   trackListeners,
-} from "../test-support/fakeDom";
-import type { Orb } from "../types/types";
+} from "../../support/fakeDom";
+import type { Orb } from "../../../app/types/types";
 
 describe("ChartView", () => {
   let container: HTMLDivElement;

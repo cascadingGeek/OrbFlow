@@ -1,4 +1,4 @@
-import type { OrbChartConfig, PhysicsConfig } from "../types/types";
+import type { OrbChartConfig, PhysicsConfig } from "../../types/types";
 import { TextOptions } from "./TextOptions";
 
 /** An `OrbChartConfig` with every option except the physics ones filled in. */
@@ -26,9 +26,7 @@ const DEFAULT_COLORS = [
 
 /**
  * Owns the option defaults, the merge that ignores `undefined`, and the
- * checks for `transitionDuration`, `ariaLabel`, `reducedMotion`, `minRadius`,
- * `fontFamily`, `theme`, `popStyle`, `enterStyle`, and `restoreOnNextPop`. All
- * but the first three warn once per bad value, not on every `updateConfig`.
+ * option checks, which warn once per bad value.
  */
 export class ConfigResolver {
   private readonly warned = new Set<string>();

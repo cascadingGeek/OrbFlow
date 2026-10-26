@@ -1,7 +1,7 @@
-import type { OrbDataInput, OrbDataIssue } from "../types/types";
+import type { OrbDataInput, OrbDataIssue } from "../../types/types";
 
 /** What `DataValidator.validate` hands back. */
-export interface ValidationResult {
+interface ValidationResult {
   accepted: OrbDataInput[];
   issues: OrbDataIssue[];
   /** True when the input was not an array at all. */

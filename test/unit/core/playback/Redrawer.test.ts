@@ -1,9 +1,12 @@
 /**
  * @jest-environment jsdom
  */
-import { AnimationLoop } from "./AnimationLoop";
-import { Playback } from "./Playback";
-import { Redrawer, type RedrawHost } from "./Redrawer";
+import { AnimationLoop } from "../../../../app/core/playback/AnimationLoop";
+import { Playback } from "../../../../app/core/playback/Playback";
+import {
+  Redrawer,
+  type RedrawHost,
+} from "../../../../app/core/playback/Redrawer";
 
 describe("Redrawer (AC-8, AC-9, AC-10)", () => {
   let log: string[];

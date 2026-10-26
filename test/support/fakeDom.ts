@@ -1,10 +1,5 @@
-/**
- * Test only helpers for the jsdom environment: a recording 2D context (jsdom
- * has no canvas), a controllable ResizeObserver, a manual animation frame
- * queue, a controllable matchMedia, key presses, and mouse events with real
- * offsetX / offsetY. Never imported by the public entries, so it is not part
- * of the build.
- */
+// jsdom fakes: a recording 2D context, controllable observers, a manual
+// animation frame queue, matchMedia, key presses, and pointer events.
 
 export interface FakeContext {
   calls: { method: string; args: unknown[] }[];
@@ -21,7 +16,7 @@ export interface FakeContext {
 }
 
 /** A gradient the fake context made: how it was created and its stops. */
-export interface FakeGradient {
+interface FakeGradient {
   kind: "radial" | "linear" | "conic";
   args: number[];
   stops: [number, string][];

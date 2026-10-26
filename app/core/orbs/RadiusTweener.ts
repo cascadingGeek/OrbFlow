@@ -1,7 +1,7 @@
-import type { Orb } from "../types/types";
+import type { Orb } from "../../types/types";
 
 /** Which way an orb's radius is moving. */
-export type TransitionPhase = "enter" | "update" | "exit";
+type TransitionPhase = "enter" | "update" | "exit";
 
 /** One running radius animation. Internal, one per orb by `id`. */
 interface OrbTransition {

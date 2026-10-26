@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { OrbChart, OrbChartConfig, OrbDataInput } from "../app/index";
+import type { OrbChart, OrbChartConfig, OrbDataInput } from "../../app/index";
 
 /** What the recorder saw the canvas draw since the last reset. */
 export interface Recording {
@@ -84,10 +84,8 @@ export const resetRecording = (page: Page) =>
 export const recording = (page: Page) => page.evaluate(() => window.rec);
 
 /**
- * Opens the vanilla fixture with the clock paused (time moves only with
- * `page.clock.runFor`), creates a 400×300 chart, and records `onOrbClick` and
- * `onOrbPop` in `window.events`. Waits for the mount's first resize draw, so
- * a test's own draws are counted from a quiet chart.
+ * Opens the vanilla fixture with a paused clock, creates a 400×300 chart that
+ * records clicks and pops in `window.events`, and waits for its first draw.
  */
 export async function openChart(
   page: Page,

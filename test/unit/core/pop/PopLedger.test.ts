@@ -1,4 +1,4 @@
-import { PopLedger, type PopRecord } from "./PopLedger";
+import { PopLedger, type PopRecord } from "../../../../app/core/pop/PopLedger";
 
 const record = (id: string, byUser = true): PopRecord => ({
   id,

@@ -1,8 +1,8 @@
-import type { Orb } from "../types/types";
+import type { Orb } from "../../types/types";
 import type { TooltipView } from "./TooltipView";
 
 /** What the focus cue draws with and asks for. */
-export interface FocusCueHost {
+interface FocusCueHost {
   tooltip: TooltipView;
   /** Sets the orb that gets the focus ring, or `null`. */
   setRing(id: string | null): void;

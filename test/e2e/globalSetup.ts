@@ -10,7 +10,7 @@ export default async function globalSetup() {
     }
   }
   await build({
-    input: "e2e/fixtures/react-app.tsx",
+    input: "test/e2e/fixtures/react-app.tsx",
     output: {
       file: "node_modules/.cache/orbflow-e2e/react-app.js",
       format: "iife",

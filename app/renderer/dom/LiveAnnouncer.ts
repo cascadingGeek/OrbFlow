@@ -23,7 +23,6 @@ export class LiveAnnouncer {
     this.region.textContent = current === text ? `${text}\u00a0` : text;
   }
 
-  /** Removes the region. */
   dispose() {
     this.region.remove();
   }

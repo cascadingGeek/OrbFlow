@@ -1,4 +1,4 @@
-import { DataValidator } from "./DataValidator";
+import { DataValidator } from "../../../../app/core/config/DataValidator";
 
 describe("DataValidator", () => {
   const validator = new DataValidator();

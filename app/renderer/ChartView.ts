@@ -1,16 +1,16 @@
 import type { Orb, OrbChartConfig } from "../types/types";
-import { AccessibleLayer, type LayerConfig } from "./AccessibleLayer";
-import { CanvasInput, type InputConfig } from "./CanvasInput";
-import { BubblePainter } from "./BubblePainter";
-import { BurstEffects, type PopSnapshot } from "./BurstEffects";
-import { CanvasRenderer, type FrameTime } from "./CanvasRenderer";
-import { EntranceGate, watchResize } from "./EntranceGate";
-import { FocusCue } from "./FocusCue";
-import { ImageCache } from "./ImageCache";
-import { LiveAnnouncer } from "./LiveAnnouncer";
-import { TooltipView } from "./TooltipView";
+import { Teardown } from "../core/lifecycle/Teardown";
 import { ValueFormatter } from "./ValueFormatter";
-import { Teardown } from "../core/Teardown";
+import { BubblePainter } from "./canvas/BubblePainter";
+import { BurstEffects, type PopSnapshot } from "./canvas/BurstEffects";
+import { CanvasRenderer, type FrameTime } from "./canvas/CanvasRenderer";
+import { ImageCache } from "./canvas/ImageCache";
+import { AccessibleLayer, type LayerConfig } from "./dom/AccessibleLayer";
+import { CanvasInput, type InputConfig } from "./dom/CanvasInput";
+import { EntranceGate, watchResize } from "./dom/EntranceGate";
+import { FocusCue } from "./dom/FocusCue";
+import { LiveAnnouncer } from "./dom/LiveAnnouncer";
+import { TooltipView } from "./dom/TooltipView";
 
 /** The options the view reads. */
 export type ViewConfig = OrbChartConfig & InputConfig & LayerConfig;
@@ -21,7 +21,6 @@ export interface ViewHost {
   onCanvasMiss(x: number, y: number): void;
   /** A click, tap, Enter, or Space on an orb. */
   onActivate(orb: Orb, event: MouseEvent): void;
-  /** An image finished loading. */
   onImageLoaded(): void;
   /** The loop clock, for bursts and ghosts. */
   now(): number;
@@ -35,15 +34,12 @@ export interface ViewHost {
   onGateOpen(): void;
   /** Draws once if no loop is doing it. */
   redrawIfStopped(): void;
-  /** The container changed size. */
   onResize(): void;
 }
 
 /**
- * Puts together everything the user sees and touches: the canvas with its
- * image cache and burst effects, the tooltip, the pointer input, the
- * accessible list, the live region, the focus cue, the entrance gate, and the
- * resize observer.
+ * Builds everything the user sees and touches: canvas, tooltip, input,
+ * accessible list, live region, focus cue, entrance gate, and resize observer.
  * If one part fails to build, the parts before it are removed again.
  */
 export class ChartView {
@@ -166,12 +162,10 @@ export class ChartView {
     this.effects.removeGhost(id);
   }
 
-  /** Removes every ghost. */
   clearGhosts() {
     this.effects.clearGhosts();
   }
 
-  /** Tells screen reader users what happened. */
   announce(text: string) {
     this.announcer.announce(text);
   }
@@ -181,7 +175,6 @@ export class ChartView {
     this.renderer.updateDimensions(width, height);
   }
 
-  /** Starts loading the orbs' images. */
   preloadImages(orbs: Orb[]) {
     this.images.preload(orbs);
   }

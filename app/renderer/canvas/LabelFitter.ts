@@ -1,5 +1,5 @@
 /** Font sizes and vertical offsets for one bubble's text. */
-export interface LabelFit {
+interface LabelFit {
   /** Label font size in pixels. */
   labelSize: number;
   /** Label center, relative to the bubble center. */
@@ -17,11 +17,8 @@ const PROBE = 100;
 const MAX_PASSES = 12;
 
 /**
- * Picks label and value sizes that fit inside a bubble. A 100 px measure gives
- * the first estimate. Width is not quite linear in size (fonts with optical
- * sizes, like the macOS system font, are wider per em when small), so the
- * estimate is checked with a measure near the chosen size. Every measure is
- * cached per font, so a settled chart measures nothing per frame.
+ * Picks label and value sizes that fit inside a bubble. A 100 px estimate is
+ * rechecked near the chosen size, and measures are cached per font.
  */
 export class LabelFitter {
   private readonly widths = new Map<string, number>();

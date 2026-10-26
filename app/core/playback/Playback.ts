@@ -1,11 +1,8 @@
 import type { AnimationLoop } from "./AnimationLoop";
 
 /**
- * Wraps the animation loop and remembers two reasons it may be idle: the
- * developer paused it, or the chart holds still for reduced motion. A pause
- * sticks until `start()`, so data and config updates can redraw a paused chart
- * without waking it up. It also remembers that the chart wanted to run, so
- * leaving still mode can bring the loop back.
+ * Wraps the animation loop with two idle reasons: a developer pause, which
+ * sticks until `start()`, and still mode for reduced motion.
  */
 export class Playback {
   private userPaused = false;

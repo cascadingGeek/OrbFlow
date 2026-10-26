@@ -1,4 +1,4 @@
-import type { Orb, OrbChartConfig } from "../types/types";
+import type { Orb, OrbChartConfig } from "../../types/types";
 import {
   HIDDEN_STYLE,
   type Entry,
@@ -18,7 +18,7 @@ export type LayerConfig = Required<
 >;
 
 /** What the layer tells its owner. */
-export interface LayerHooks {
+interface LayerHooks {
   /** The focused orb changed. `null` means focus left the list. */
   onFocus(orb: Orb | null): void;
   /** Escape was pressed. Return true if it hid something. */
@@ -52,10 +52,10 @@ export class AccessibleLayer {
   ];
 
   constructor(
-    private readonly container: HTMLElement,
+    container: HTMLElement,
     private readonly getConfig: () => LayerConfig,
     private readonly hooks: LayerHooks,
-    private readonly makeId: () => string = randomId,
+    makeId: () => string = randomId,
   ) {
     // The list is placed against the container, which must be positioned.
     this.restorePosition = ensurePositioned(container);

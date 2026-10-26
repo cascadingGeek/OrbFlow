@@ -21,11 +21,8 @@ function sameValue(a: unknown, b: unknown): boolean {
 }
 
 /**
- * Compares the config props of this render with the ones last applied.
- * Values are compared with `Object.is`, and arrays item by item. A key that
- * became `undefined` is skipped and keeps its old value, because the chart
- * ignores `undefined` too.
- *
+ * Compares this render's config with the last applied one (arrays item by
+ * item); `undefined` keys are skipped, as the chart ignores them too.
  * @returns `changes` for `updateConfig`, and `applied` to remember next time.
  */
 export function diffConfig(

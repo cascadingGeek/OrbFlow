@@ -1,5 +1,5 @@
-import { ValueFormatter } from "./ValueFormatter";
-import type { Orb, OrbChartConfig } from "../types/types";
+import { ValueFormatter } from "../../../app/renderer/ValueFormatter";
+import type { Orb, OrbChartConfig } from "../../../app/types/types";
 
 const orb = (value: number, id = "a"): Orb => ({
   id,

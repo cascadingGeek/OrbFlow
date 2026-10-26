@@ -4,7 +4,7 @@
 import "@testing-library/jest-dom";
 import { StrictMode } from "react";
 import { render } from "@testing-library/react";
-import { OrbChart } from "./OrbChart";
+import { OrbChart } from "../../../app/react/OrbChart";
 import {
   dispatchMouse,
   installFakeCanvas,
@@ -12,7 +12,7 @@ import {
   installFrameQueue,
   setElementSize,
   type FakeContext,
-} from "../test-support/fakeDom";
+} from "../../support/fakeDom";
 
 const data = [
   { id: "a", label: "Alpha", value: 40 },

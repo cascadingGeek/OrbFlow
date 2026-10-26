@@ -1,4 +1,4 @@
-import type { Orb } from "../types/types";
+import type { Orb } from "../../types/types";
 
 /**
  * Loads orb images once per URL and keeps the ones that finished loading.
@@ -24,7 +24,6 @@ export class ImageCache {
     return img;
   }
 
-  /** Starts loading every orb's image. */
   preload(orbs: Orb[]) {
     for (const orb of orbs) if (orb.imageUrl) this.request(orb.imageUrl);
   }

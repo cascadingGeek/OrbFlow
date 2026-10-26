@@ -1,8 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import { AnimationLoop } from "./AnimationLoop";
-import { Playback } from "./Playback";
+import { AnimationLoop } from "../../../../app/core/playback/AnimationLoop";
+import { Playback } from "../../../../app/core/playback/Playback";
 
 describe("Playback", () => {
   let loop: AnimationLoop;

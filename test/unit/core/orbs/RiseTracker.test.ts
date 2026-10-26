@@ -1,5 +1,8 @@
-import { RiseTracker, type RiseSettings } from "./RiseTracker";
-import type { Orb } from "../types/types";
+import {
+  RiseTracker,
+  type RiseSettings,
+} from "../../../../app/core/orbs/RiseTracker";
+import type { Orb } from "../../../../app/types/types";
 
 const orb = (id: string, y = 100, radius = 20): Orb => ({
   id,

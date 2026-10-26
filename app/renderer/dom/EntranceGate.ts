@@ -1,8 +1,6 @@
 /**
- * Waits for the container to scroll into view for the first time. The gate
- * opens once and for good: scrolling away and back never closes it. Where
- * `IntersectionObserver` does not exist, it is open from the start and never
- * calls `onOpen`, because its owner is still being built.
+ * Opens once and for good when the container first scrolls into view. Without
+ * `IntersectionObserver` it starts open and never calls `onOpen`.
  */
 export class EntranceGate {
   private observer: IntersectionObserver | null = null;

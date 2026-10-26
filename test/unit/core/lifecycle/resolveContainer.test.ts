@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { resolveContainer } from "./resolveContainer";
+import { resolveContainer } from "../../../../app/core/lifecycle/resolveContainer";
 
 describe("resolveContainer", () => {
   afterEach(() => {

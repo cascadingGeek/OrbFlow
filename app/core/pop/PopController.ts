@@ -1,6 +1,6 @@
-import type { PopSnapshot } from "../renderer/BurstEffects";
-import type { Orb } from "../types/types";
-import type { ResolvedConfig } from "./ConfigResolver";
+import type { PopSnapshot } from "../../renderer/canvas/BurstEffects";
+import type { Orb } from "../../types/types";
+import type { ResolvedConfig } from "../config/ConfigResolver";
 import type { PopLedger, PopRecord } from "./PopLedger";
 
 /** What popping and restoring need from the chart. */
@@ -15,9 +15,7 @@ export interface PopHost {
   snapshotOf(orb: Orb): PopSnapshot | null;
   /** Takes the orb out of the chart, then syncs input and the hidden list. */
   remove(orb: Orb): void;
-  /** Adds the burst and any ghost. */
   burst(snapshot: PopSnapshot, idle: boolean): void;
-  /** Tells screen reader users. */
   announce(text: string): void;
   /** Pushes neighbors away from a point. */
   push(x: number, y: number, reach: number, strength: number): void;
@@ -37,7 +35,6 @@ export interface PopHost {
     | "restoreOnNextPop"
     | "onOrbRestore"
   >;
-  /** The popped bubbles. */
   readonly ledger: PopLedger;
   /** Builds the orb a record describes and adds it to the list. */
   rebuild(record: PopRecord): Orb;
@@ -53,10 +50,8 @@ export interface PopHost {
 const name = (orb: Orb) => orb.label || orb.id;
 
 /**
- * Pops and restores bubbles. A pop takes the orb out of the chart at once,
- * remembers it in the ledger, and hands a snapshot to the burst effects, so
- * physics, hit testing, the hidden list, and `getData()` never see a half
- * popped bubble. A restore builds the bubble again from its record.
+ * Pops and restores bubbles. A pop removes the orb at once and hands a
+ * snapshot to the burst effects; a restore rebuilds it from its record.
  */
 export class PopController {
   constructor(private readonly host: PopHost) {}

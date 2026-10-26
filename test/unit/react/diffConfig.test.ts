@@ -1,4 +1,4 @@
-import { CALLBACK_KEYS, diffConfig } from "./diffConfig";
+import { CALLBACK_KEYS, diffConfig } from "../../../app/react/diffConfig";
 
 describe("diffConfig", () => {
   it("returns nothing for equal values, including equal arrays", () => {

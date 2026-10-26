@@ -34,7 +34,7 @@ jobs:
       - name: Install React 19
         run: npm install --no-save react@19 react-dom@19 @types/react@19 @types/react-dom@19
       - run: npm run typecheck
-      - run: npm test -- app/react
+      - run: npm test -- /react/
       - run: npm run build
       - name: Smoke fixtures against React 19
         run: npm run smoke

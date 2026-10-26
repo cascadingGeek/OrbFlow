@@ -11,76 +11,35 @@ import { diffConfig, type ConfigValues } from "./diffConfig";
 import { useLatest } from "./useLatest";
 
 /**
- * Props of the `<OrbChart>` component: every chart option, plus the data and
- * the usual `className` and `style` of the container.
- *
- * - `data` is applied with `setData` whenever its reference changes. Keep it
- *   stable (for example with `useMemo`) to avoid needless updates.
- * - Callbacks (`onOrbClick`, `onOrbHover`, `onDataIssue`, `onOrbPop`,
- *   `onOrbRestore`) and `formatValue` can change on every render. The newest
- *   one always runs, and a change causes no chart update. A new `formatValue`
- *   shows from the next draw, so a paused chart shows it only after its next
- *   draw (for example after a `data` change).
- * - Keep `data` stable: a new array on a parent re render calls `setData`,
- *   which forgets the popped bubbles and brings their ids back as new ones.
- * - Config values are compared by value, and `colorScheme` item by item, so
- *   inline objects and arrays with equal values cost nothing.
- * - A config prop that becomes `undefined` (or is removed) keeps its last
- *   value. It is not reset to the default. Pass an explicit value to change it.
- * - `damping`, `minVelocity`, and `bounceCoefficient` only take effect at
- *   mount. `width` and `height` are replaced by the measured container size.
+ * Every chart option plus `data`, `className`, and `style`. Keep `data` stable:
+ * a new reference calls `setData`. Callbacks may change freely on each render.
  */
 export interface OrbChartProps extends OrbChartConfig {
   /** Orbs to draw. Matched by `id` on every change of this reference. */
   data: OrbDataInput[];
   /** Class name of the container `div`. */
   className?: string;
-  /**
-   * Style of the container `div`. It fills its parent by default
-   * (`width: 100%; height: 100%`), and anything given here overrides that.
-   */
+  /** Style of the container `div`, which fills its parent by default. */
   style?: CSSProperties;
 }
 
-/**
- * What a ref to `<OrbChart>` gives you. The object stays the same across
- * renders. It does nothing after the component unmounts.
- */
+/** What a ref to `<OrbChart>` gives you; stable, and inert after unmount. */
 export interface OrbChartHandle {
   /** Starts or resumes the animation. */
   start(): void;
-  /**
-   * Pauses the animation. A paused chart stays paused when new data or config
-   * arrives, and shows it as one still frame. Calling this before the chart
-   * exists (for example in a parent's layout effect) makes it start paused.
-   */
+  /** Pauses the animation; called before mount, the chart starts paused. */
   pause(): void;
-  /**
-   * The chart's current orbs, without orbs that are shrinking out. Returns
-   * `[]` when the chart is not mounted. These are the live objects: treat them
-   * as read only.
-   */
+  /** The live orbs (read only), without exiting ones; `[]` when unmounted. */
   getData(): Orb[];
-  /**
-   * Pops the live bubble `id`, as `OrbChart.pop` does. Returns `false` when
-   * there is no such bubble or the chart is not mounted.
-   */
+  /** Pops bubble `id`, as `OrbChart.pop` does; `false` when unmounted. */
   pop(id: string): boolean;
-  /**
-   * Brings back the popped bubble `id`, or all popped bubbles without an
-   * `id`, as `OrbChart.restore` does. Returns `false` when nothing came back
-   * or the chart is not mounted.
-   */
+  /** Brings back popped bubble `id`, or all; `false` when nothing came back. */
   restore(id?: string): boolean;
 }
 
 /**
- * React component for an OrbFlow chart. It renders one `div` on the server and
- * creates the canvas after mount, so it is safe with server rendering, strict
- * mode, and error boundaries. A failure while creating the chart is thrown to
- * the nearest error boundary. Use `ref` to get an {@link OrbChartHandle}.
- *
- * Add `"use client"` to the file that renders it in a server components setup.
+ * React component for an OrbFlow chart. Renders one `div` on the server and
+ * creates the canvas after mount. Use `ref` to get an {@link OrbChartHandle}.
  */
 export const OrbChart = forwardRef<OrbChartHandle, OrbChartProps>(
   function OrbChart({ data, className, style, ...rest }, ref) {

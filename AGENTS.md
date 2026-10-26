@@ -38,7 +38,9 @@ Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`, or a folder `docs/s
 ## Rules
 
 - SOLID OOP: small single purpose classes (under ~200 lines), composed behind the thin public `OrbChart`; dependencies passed through constructors, no globals or registries; composition over inheritance. Tests inject fakes via constructors.
-- Folders by role under `app/`: `core/`, `renderer/`, `types/`, `react/` (future frameworks become sibling folders on the same core).
+- Folders by role under `app/`: `core/`, `renderer/`, `types/`, `react/` (future frameworks become sibling folders on the same core). `core/` splits into `config/`, `lifecycle/`, `orbs/`, `physics/`, `playback/`, `pop/` around the `OrbChart` facade; `renderer/` into `canvas/` (drawing) and `dom/` (tooltip, input, accessible list) around `ChartView`.
+- All tests live under `test/`, never in `app/`: `unit/` mirrors `app/`, `integration/` holds full chart and public entry tests, `e2e/` the Playwright suite, `support/` shared fakes, `consumers/` the smoke fixtures.
+- Comments are 1 to 3 lines; imports sit at the top of each file, never inline.
 - TypeScript `strict`: no `any` (use `unknown` and narrow), exhaustive types. Public types are part of the 1.0 promise.
 - Named exports only, no default exports. Public surface is exactly what spec 0001 AC-3 lists; a new public export is an API decision, never incidental. Never export internals (`PhysicsEngine`, `CanvasRenderer`).
 - Lifecycle: `OrbChart` registers every resource (canvas, input listeners, `ResizeObserver`) on its teardown list the moment it is created, and `destroy()` is idempotent. Time comes from the `AnimationLoop` clock, never `Date.now()`; collaborators take it as an argument so tests can fake it.
@@ -58,7 +60,7 @@ Chosen in /audit, installed by `/develop tooling` (scope feature 2):
 - Pre-commit: lint + format + typecheck on staged files via a git hook.
   (`simple-git-hooks` runs `lint-staged` then `npm run typecheck`; `npm install` installs the hook through `prepare`.)
 - Testing: unit + integration with a framework (Jest installed; `/test` sets up the runner), plus spec 0001's dist checks and smoke fixtures.
-  (Jest + ts-jest, tests beside the source as `*.test.ts(x)`, choices in `test-preferences.json`. DOM tests opt in with a `@jest-environment jsdom` docblock and use the fakes in `app/test-support/fakeDom.ts` (2D canvas, ResizeObserver, animation frames, matchMedia, live listener counts, touch taps, key presses). A known, unfixed bug is kept as an `it.failing` test with a comment until it is fixed.)
+  (Jest + ts-jest, tests in `test/unit/` (mirroring `app/`) and `test/integration/` as `*.test.ts(x)`, choices in `test-preferences.json`. DOM tests opt in with a `@jest-environment jsdom` docblock and use the fakes in `test/support/fakeDom.ts` (2D canvas, ResizeObserver, animation frames, matchMedia, live listener counts, touch taps, key presses). A known, unfixed bug is kept as an `it.failing` test with a comment until it is fixed.)
 - CI: GitHub Actions on push and PR running lint, typecheck, test, build, check:package, plus a `react-19` job (typecheck, React tests, build, smoke against React 19).
 
 ## Git

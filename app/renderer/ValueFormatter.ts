@@ -1,11 +1,8 @@
 import type { Orb, OrbChartConfig } from "../types/types";
 
 /**
- * The one place a bubble's value turns into text. A faulty `formatValue`
- * never reaches a frame: a throw is logged once per chart and the plain number
- * is used. It also remembers the text of the last frame, so the tooltip and
- * the hidden list show what the canvas drew without calling the formatter
- * again. It holds no timers and no listeners.
+ * The one place a value turns into text. A throwing `formatValue` is logged
+ * once and the plain number is used; last frame's text is kept for readers.
  */
 export class ValueFormatter {
   private drawn = new Map<
@@ -24,10 +21,8 @@ export class ValueFormatter {
   }
 
   /**
-   * The text drawn last for `orb`. If it was never drawn, or its value or
-   * label has changed since, one fresh text is made and kept until the next
-   * frame draws it, so readers between frames never call the formatter twice.
-   * A formatter that reads other fields shows them from the next draw.
+   * The text drawn last for `orb`, or a fresh one kept until the next frame
+   * when it was never drawn or its value or label changed.
    */
   drawnText(orb: Orb): string {
     const drawn = this.drawn.get(orb.id);

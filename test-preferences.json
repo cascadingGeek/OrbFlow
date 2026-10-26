@@ -7,10 +7,10 @@
     "jest-environment-jsdom"
   ],
   "e2eTool": "playwright",
-  "testDir": "beside the source",
+  "testDir": "test/unit (mirrors app/), test/integration",
   "filePattern": "*.test.ts",
   "packageManager": "npm",
-  "e2eDir": "e2e",
+  "e2eDir": "test/e2e",
   "e2eFilePattern": "*.e2e.ts",
   "e2eRunCommand": "npm run test:e2e"
 }

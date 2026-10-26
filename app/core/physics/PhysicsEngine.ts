@@ -1,0 +1,193 @@
+import type { Orb, PhysicsConfig } from "../../types/types";
+
+/** Buckets orbs by cell so collisions only check neighbors. */
+class SpatialGrid {
+  private grid: Map<string, Orb[]> = new Map();
+  private cellSize: number;
+
+  constructor(cellSize: number = 100) {
+    this.cellSize = cellSize;
+  }
+
+  clear(cellSize: number = this.cellSize) {
+    this.grid.clear();
+    this.cellSize = cellSize;
+  }
+
+  insert(orb: Orb) {
+    const cellX = Math.floor(orb.x / this.cellSize);
+    const cellY = Math.floor(orb.y / this.cellSize);
+    const key = `${cellX},${cellY}`;
+
+    let cell = this.grid.get(key);
+    if (!cell) {
+      cell = [];
+      this.grid.set(key, cell);
+    }
+    cell.push(orb);
+  }
+
+  getNearby(orb: Orb): Orb[] {
+    const cellX = Math.floor(orb.x / this.cellSize);
+    const cellY = Math.floor(orb.y / this.cellSize);
+    const nearby: Orb[] = [];
+
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const key = `${cellX + dx},${cellY + dy}`;
+        const cell = this.grid.get(key);
+        if (cell) nearby.push(...cell);
+      }
+    }
+
+    return nearby.filter((b) => b.id !== orb.id);
+  }
+}
+
+/** Moves, bounces, and separates orbs each frame. */
+export class PhysicsEngine {
+  private spatialGrid: SpatialGrid;
+  private width: number;
+  private height: number;
+  private damping: number;
+  private minVelocity: number;
+  private bounceCoefficient: number;
+
+  constructor(width: number, height: number, config: PhysicsConfig = {}) {
+    this.width = width;
+    this.height = height;
+    this.spatialGrid = new SpatialGrid();
+
+    this.damping = config.damping ?? 0.95;
+    this.minVelocity = config.minVelocity ?? 0.01;
+    this.bounceCoefficient = config.bounceCoefficient ?? 0.6;
+  }
+
+  updateDimensions(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+  }
+
+  /** Steps the simulation once. `drift: false` turns the random wobble off. */
+  update(orbs: Orb[], drift = true): Orb[] {
+    orbs.forEach((orb) => {
+      this.updatePosition(orb, drift);
+      this.handleBoundaries(orb);
+    });
+
+    // getNearby only looks one cell away, so a cell must span the longest
+    // collision distance (two of the largest radii), and orbs are indexed
+    // at the positions the collision pass will read.
+    const largestRadius = orbs.reduce(
+      (max, orb) => Math.max(max, orb.radius),
+      0,
+    );
+    this.spatialGrid.clear(Math.max(100, largestRadius * 2));
+    orbs.forEach((orb) => this.spatialGrid.insert(orb));
+
+    orbs.forEach((orb) => {
+      const nearby = this.spatialGrid.getNearby(orb);
+      nearby.forEach((other) => {
+        this.handleCollision(orb, other);
+      });
+    });
+
+    return orbs;
+  }
+
+  private updatePosition(orb: Orb, drift: boolean) {
+    // Subtle brownian drift.
+    if (drift) {
+      orb.vx += (Math.random() - 0.5) * 0.02;
+      orb.vy += (Math.random() - 0.5) * 0.02;
+    }
+
+    orb.x += orb.vx;
+    orb.y += orb.vy;
+
+    if (Math.abs(orb.vx) > this.minVelocity) {
+      orb.vx *= this.damping;
+    }
+
+    if (Math.abs(orb.vy) > this.minVelocity) {
+      orb.vy *= this.damping;
+    }
+
+    // Cap the speed so bubbles never turn chaotic.
+    const maxSpeed = 2;
+    const speed = Math.sqrt(orb.vx ** 2 + orb.vy ** 2);
+    if (speed > maxSpeed) {
+      orb.vx = (orb.vx / speed) * maxSpeed;
+      orb.vy = (orb.vy / speed) * maxSpeed;
+    }
+  }
+
+  private handleBoundaries(orb: Orb) {
+    const margin = orb.radius;
+
+    if (orb.x < margin) {
+      orb.x = margin;
+      orb.vx = Math.abs(orb.vx) * this.bounceCoefficient + 0.5; // push off the wall
+    } else if (orb.x > this.width - margin) {
+      orb.x = this.width - margin;
+      orb.vx = -Math.abs(orb.vx) * this.bounceCoefficient - 0.5;
+    }
+
+    if (orb.y < margin) {
+      orb.y = margin;
+      orb.vy = Math.abs(orb.vy) * this.bounceCoefficient + 0.5;
+    } else if (orb.y > this.height - margin) {
+      orb.y = this.height - margin;
+      orb.vy = -Math.abs(orb.vy) * this.bounceCoefficient - 0.5;
+    }
+  }
+
+  private handleCollision(a: Orb, b: Orb) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const minDistance = a.radius + b.radius;
+
+    if (distance < minDistance && distance > 0) {
+      const overlap = (minDistance - distance) * 0.5;
+      const separationX = (dx / distance) * overlap;
+      const separationY = (dy / distance) * overlap;
+
+      a.x -= separationX;
+      a.y -= separationY;
+      b.x += separationX;
+      b.y += separationY;
+
+      // A gentle push apart instead of a full collision response.
+      const pushStrength = 0.3;
+      a.vx -= (dx / distance) * pushStrength;
+      a.vy -= (dy / distance) * pushStrength;
+      b.vx += (dx / distance) * pushStrength;
+      b.vy += (dy / distance) * pushStrength;
+    }
+  }
+
+  /**
+   * Pushes orbs away from a point; `strength` is the push at the point
+   * (2 for a click, 1 for a pop), fading to 0 at `radius`.
+   */
+  applyMouseRepulsion(
+    orbs: Orb[],
+    mouseX: number,
+    mouseY: number,
+    radius: number = 150,
+    strength: number = 2,
+  ) {
+    orbs.forEach((orb) => {
+      const dx = orb.x - mouseX;
+      const dy = orb.y - mouseY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < radius && distance > 0) {
+        const force = (1 - distance / radius) * strength;
+        orb.vx += (dx / distance) * force;
+        orb.vy += (dy / distance) * force;
+      }
+    });
+  }
+}

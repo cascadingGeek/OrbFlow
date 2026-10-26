@@ -1,22 +1,22 @@
-import { PhysicsEngine } from "./physics";
-import { ChartView } from "../renderer/ChartView";
-import { AnimationLoop } from "./AnimationLoop";
-import { Playback } from "./Playback";
-import { reportIssues } from "./reportIssues";
-import { ConfigResolver, type ResolvedConfig } from "./ConfigResolver";
-import { DataValidator } from "./DataValidator";
-import { OrbReconciler } from "./OrbReconciler";
-import { ChartPopHost } from "./ChartPopHost";
-import { PopController } from "./PopController";
-import { PopLedger } from "./PopLedger";
-import { RadiusTweener } from "./RadiusTweener";
-import { RiseTracker } from "./RiseTracker";
-import { MotionPreference } from "./MotionPreference";
-import { Settler } from "./Settler";
-import { Redrawer } from "./Redrawer";
-import { Teardown } from "./Teardown";
-import { resolveContainer } from "./resolveContainer";
 import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
+import { ChartView } from "../renderer/ChartView";
+import { ConfigResolver, type ResolvedConfig } from "./config/ConfigResolver";
+import { DataValidator } from "./config/DataValidator";
+import { reportIssues } from "./config/reportIssues";
+import { Teardown } from "./lifecycle/Teardown";
+import { resolveContainer } from "./lifecycle/resolveContainer";
+import { OrbReconciler } from "./orbs/OrbReconciler";
+import { RadiusTweener } from "./orbs/RadiusTweener";
+import { RiseTracker } from "./orbs/RiseTracker";
+import { PhysicsEngine } from "./physics/PhysicsEngine";
+import { Settler } from "./physics/Settler";
+import { AnimationLoop } from "./playback/AnimationLoop";
+import { MotionPreference } from "./playback/MotionPreference";
+import { Playback } from "./playback/Playback";
+import { Redrawer } from "./playback/Redrawer";
+import { ChartPopHost } from "./pop/ChartPopHost";
+import { PopController } from "./pop/PopController";
+import { PopLedger } from "./pop/PopLedger";
 
 /** The chart, framework agnostic. */
 export class OrbChart {
@@ -138,10 +138,8 @@ export class OrbChart {
   }
 
   /**
-   * Load data. Orbs are matched by `id`: existing ones keep their place and
-   * animate to their new size, new ones rise in (or grow, see `enterStyle`),
-   * missing ones shrink out. Bad entries are skipped and reported, never
-   * thrown. Popped bubbles are forgotten: the data is the truth.
+   * Loads data, matching orbs by `id`: new ones enter, missing ones shrink out.
+   * Bad entries are skipped and reported, and popped bubbles are forgotten.
    */
   setData(data: OrbDataInput[]) {
     if (this.destroyed) return;
@@ -204,7 +202,6 @@ export class OrbChart {
     this.draw(now);
   }
 
-  /** Start or resume animation. */
   start() {
     if (this.destroyed) return;
     this.playback.start();
@@ -222,10 +219,8 @@ export class OrbChart {
   }
 
   /**
-   * Pops the live bubble `id`: it bursts into droplets (or, on a paused or
-   * still chart, disappears at once), `onOrbPop` runs, and screen readers
-   * hear it. Returns false for an unknown id, a bubble already popped or
-   * shrinking out, or after `destroy()`.
+   * Pops the live bubble `id` into droplets and runs `onOrbPop`. Returns false
+   * for an unknown, popped, or exiting id, or after `destroy()`.
    */
   pop(id: string): boolean {
     return !this.destroyed && this.pops.pop(id);

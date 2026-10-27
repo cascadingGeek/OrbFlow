@@ -1,4 +1,4 @@
-import { drawFocusRing } from "../../../../app/renderer/canvas/focusRing";
+import { drawFocusRing } from "@/renderer/canvas/focusRing";
 
 describe("drawFocusRing", () => {
   it("strokes a dark inner ring and a white outer ring around the bubble", () => {

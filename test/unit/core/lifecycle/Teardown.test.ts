@@ -1,4 +1,4 @@
-import { Teardown } from "../../../../app/core/lifecycle/Teardown";
+import { Teardown } from "@/core/lifecycle/Teardown";
 
 describe("Teardown", () => {
   it("runs steps newest first", () => {

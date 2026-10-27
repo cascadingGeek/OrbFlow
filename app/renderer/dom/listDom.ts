@@ -1,4 +1,4 @@
-import type { Orb } from "../../types/types";
+import type { Orb } from "@/types/types";
 
 /** The standard clip pattern: invisible, but still in the accessibility tree. */
 export const HIDDEN_STYLE =

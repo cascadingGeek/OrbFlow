@@ -1,16 +1,22 @@
-import type { Orb, OrbChartConfig } from "../types/types";
-import { Teardown } from "../core/lifecycle/Teardown";
-import { ValueFormatter } from "./ValueFormatter";
-import { BubblePainter } from "./canvas/BubblePainter";
-import { BurstEffects, type PopSnapshot } from "./canvas/BurstEffects";
-import { CanvasRenderer, type FrameTime } from "./canvas/CanvasRenderer";
-import { ImageCache } from "./canvas/ImageCache";
-import { AccessibleLayer, type LayerConfig } from "./dom/AccessibleLayer";
-import { CanvasInput, type InputConfig } from "./dom/CanvasInput";
-import { EntranceGate, watchResize } from "./dom/EntranceGate";
-import { FocusCue } from "./dom/FocusCue";
-import { LiveAnnouncer } from "./dom/LiveAnnouncer";
-import { TooltipView } from "./dom/TooltipView";
+import type { Orb, OrbChartConfig } from "@/types/types";
+import { Teardown } from "@/core/lifecycle/Teardown";
+import { ValueFormatter } from "@/renderer/ValueFormatter";
+import { BubblePainter } from "@/renderer/canvas/BubblePainter";
+import { BurstEffects, type PopSnapshot } from "@/renderer/canvas/BurstEffects";
+import {
+  CanvasRenderer,
+  type FrameTime,
+} from "@/renderer/canvas/CanvasRenderer";
+import { ImageCache } from "@/renderer/canvas/ImageCache";
+import {
+  AccessibleLayer,
+  type LayerConfig,
+} from "@/renderer/dom/AccessibleLayer";
+import { CanvasInput, type InputConfig } from "@/renderer/dom/CanvasInput";
+import { EntranceGate, watchResize } from "@/renderer/dom/EntranceGate";
+import { FocusCue } from "@/renderer/dom/FocusCue";
+import { LiveAnnouncer } from "@/renderer/dom/LiveAnnouncer";
+import { TooltipView } from "@/renderer/dom/TooltipView";
 
 /** The options the view reads. */
 export type ViewConfig = OrbChartConfig & InputConfig & LayerConfig;

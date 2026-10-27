@@ -1,4 +1,4 @@
-import { TextOptions } from "../../../../app/core/config/TextOptions";
+import { TextOptions } from "@/core/config/TextOptions";
 
 describe("TextOptions (spec 0007 AC-8, AC-9)", () => {
   let warn: jest.Mock;

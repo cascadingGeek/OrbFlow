@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { SPOTS, THREE, onCanvas, openChart, place } from "./helpers";
+import { SPOTS, THREE, onCanvas, openChart, place } from "@test/e2e/helpers";
 
 // Bubbles rising from below, the scroll gate, and restore, on the loop clock
 // in real Chrome (spec 0006). Time moves only with `page.clock.runFor`.

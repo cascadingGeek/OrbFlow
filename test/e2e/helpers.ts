@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { OrbChart, OrbChartConfig, OrbDataInput } from "../../app/index";
+import type { OrbChart, OrbChartConfig, OrbDataInput } from "@/index";
 
 /** What the recorder saw the canvas draw since the last reset. */
 export interface Recording {

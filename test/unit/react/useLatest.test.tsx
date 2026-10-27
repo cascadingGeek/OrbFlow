@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { renderHook } from "@testing-library/react";
-import { useLatest } from "../../../app/react/useLatest";
+import { useLatest } from "@/react/useLatest";
 
 describe("useLatest", () => {
   it("starts with the first value", () => {

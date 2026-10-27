@@ -1,10 +1,10 @@
 /**
  * @jest-environment jsdom
  */
-import { CanvasRenderer } from "../../../../app/renderer/canvas/CanvasRenderer";
-import { ImageCache } from "../../../../app/renderer/canvas/ImageCache";
-import { installFakeCanvas, type FakeContext } from "../../../support/fakeDom";
-import type { Orb } from "../../../../app/types/types";
+import { CanvasRenderer } from "@/renderer/canvas/CanvasRenderer";
+import { ImageCache } from "@/renderer/canvas/ImageCache";
+import { installFakeCanvas, type FakeContext } from "@test/support/fakeDom";
+import type { Orb } from "@/types/types";
 
 const at = (elapsed: number) => ({ now: 0, elapsed, moving: true });
 

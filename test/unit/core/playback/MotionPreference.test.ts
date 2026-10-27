@@ -1,8 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import { MotionPreference } from "../../../../app/core/playback/MotionPreference";
-import { installFakeMatchMedia } from "../../../support/fakeDom";
+import { MotionPreference } from "@/core/playback/MotionPreference";
+import { installFakeMatchMedia } from "@test/support/fakeDom";
 
 describe("MotionPreference (AC-7)", () => {
   let media: ReturnType<typeof installFakeMatchMedia>;

@@ -1,5 +1,5 @@
-import { RadiusTweener } from "../../../../app/core/orbs/RadiusTweener";
-import type { Orb } from "../../../../app/types/types";
+import { RadiusTweener } from "@/core/orbs/RadiusTweener";
+import type { Orb } from "@/types/types";
 
 const makeOrb = (id: string, radius = 0): Orb => ({
   id,

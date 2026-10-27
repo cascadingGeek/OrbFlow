@@ -1,5 +1,5 @@
-import { PhysicsEngine } from "../../../../app/core/physics/PhysicsEngine";
-import type { Orb } from "../../../../app/types/types";
+import { PhysicsEngine } from "@/core/physics/PhysicsEngine";
+import type { Orb } from "@/types/types";
 
 function makeOrb(overrides: Partial<Orb> = {}): Orb {
   return {

@@ -1,8 +1,8 @@
-import type { Orb, OrbDataInput } from "../../types/types";
-import type { ResolvedConfig } from "../config/ConfigResolver";
-import type { PopRecord } from "../pop/PopLedger";
-import type { RadiusTweener } from "./RadiusTweener";
-import { Spawner, type Place } from "./Spawner";
+import type { Orb, OrbDataInput } from "@/types/types";
+import type { ResolvedConfig } from "@/core/config/ConfigResolver";
+import type { PopRecord } from "@/core/pop/PopLedger";
+import type { RadiusTweener } from "@/core/orbs/RadiusTweener";
+import { Spawner, type Place } from "@/core/orbs/Spawner";
 
 /** Where a new orb waits for a container that has no size yet. */
 interface PendingSpawn {

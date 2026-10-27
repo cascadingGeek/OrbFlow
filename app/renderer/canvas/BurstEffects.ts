@@ -1,6 +1,10 @@
-import type { Bubble, BubblePainter, Look } from "./BubblePainter";
-import { W, circle, disc, fill } from "./bubbleLayers";
-import { rgba } from "./color";
+import type {
+  Bubble,
+  BubblePainter,
+  Look,
+} from "@/renderer/canvas/BubblePainter";
+import { W, circle, disc, fill } from "@/renderer/canvas/bubbleLayers";
+import { rgba } from "@/renderer/canvas/color";
 
 /** A popped bubble as it was drawn at the moment it popped. */
 export interface PopSnapshot extends Bubble {

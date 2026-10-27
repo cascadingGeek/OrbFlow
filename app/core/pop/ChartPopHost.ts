@@ -1,13 +1,13 @@
-import type { ChartView } from "../../renderer/ChartView";
-import type { PopSnapshot } from "../../renderer/canvas/BurstEffects";
-import type { Orb } from "../../types/types";
-import type { ResolvedConfig } from "../config/ConfigResolver";
-import type { OrbReconciler } from "../orbs/OrbReconciler";
-import type { PhysicsEngine } from "../physics/PhysicsEngine";
-import type { Playback } from "../playback/Playback";
-import type { PopHost } from "./PopController";
-import type { PopLedger, PopRecord } from "./PopLedger";
-import type { RiseTracker } from "../orbs/RiseTracker";
+import type { ChartView } from "@/renderer/ChartView";
+import type { PopSnapshot } from "@/renderer/canvas/BurstEffects";
+import type { Orb } from "@/types/types";
+import type { ResolvedConfig } from "@/core/config/ConfigResolver";
+import type { OrbReconciler } from "@/core/orbs/OrbReconciler";
+import type { PhysicsEngine } from "@/core/physics/PhysicsEngine";
+import type { Playback } from "@/core/playback/Playback";
+import type { PopHost } from "@/core/pop/PopController";
+import type { PopLedger, PopRecord } from "@/core/pop/PopLedger";
+import type { RiseTracker } from "@/core/orbs/RiseTracker";
 
 /** The chart's orbs, which the host reads and replaces. */
 interface OrbStore {

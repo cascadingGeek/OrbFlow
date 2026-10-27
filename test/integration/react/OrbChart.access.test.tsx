@@ -4,14 +4,14 @@
 import "@testing-library/jest-dom";
 import { StrictMode } from "react";
 import { render } from "@testing-library/react";
-import { OrbChart } from "../../../app/react/OrbChart";
-import { OrbChart as OrbChartCore } from "../../../app/core/OrbChart";
+import { OrbChart } from "@/react/OrbChart";
+import { OrbChart as OrbChartCore } from "@/core/OrbChart";
 import {
   installFakeCanvas,
   installFakeMatchMedia,
   installFakeResizeObserver,
   installFrameQueue,
-} from "../../support/fakeDom";
+} from "@test/support/fakeDom";
 
 const data = [
   { id: "a", label: "Alpha", value: 40 },

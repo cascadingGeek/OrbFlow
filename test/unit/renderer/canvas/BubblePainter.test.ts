@@ -5,12 +5,12 @@ import {
   BubblePainter,
   type Bubble,
   type Look,
-} from "../../../../app/renderer/canvas/BubblePainter";
+} from "@/renderer/canvas/BubblePainter";
 import {
   defined,
   installFakeCanvas,
   type FakeContext,
-} from "../../../support/fakeDom";
+} from "@test/support/fakeDom";
 
 describe("BubblePainter (AC-6, AC-7)", () => {
   const dark: Look = {

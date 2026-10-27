@@ -5,10 +5,10 @@ import {
   useRef,
   type CSSProperties,
 } from "react";
-import { OrbChart as OrbChartCore } from "../core/OrbChart";
-import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
-import { diffConfig, type ConfigValues } from "./diffConfig";
-import { useLatest } from "./useLatest";
+import { OrbChart as OrbChartCore } from "@/core/OrbChart";
+import type { Orb, OrbChartConfig, OrbDataInput } from "@/types/types";
+import { diffConfig, type ConfigValues } from "@/react/diffConfig";
+import { useLatest } from "@/react/useLatest";
 
 /**
  * Every chart option plus `data`, `className`, and `style`. Keep `data` stable:

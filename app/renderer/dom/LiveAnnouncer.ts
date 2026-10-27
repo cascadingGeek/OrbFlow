@@ -1,4 +1,4 @@
-import { HIDDEN_STYLE } from "./listDom";
+import { HIDDEN_STYLE } from "@/renderer/dom/listDom";
 
 /**
  * A visually hidden polite live region, beside the accessible list (never

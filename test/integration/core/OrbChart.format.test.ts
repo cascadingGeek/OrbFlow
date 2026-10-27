@@ -1,15 +1,15 @@
 /**
  * @jest-environment jsdom
  */
-import { OrbChart } from "../../../app/core/OrbChart";
+import { OrbChart } from "@/core/OrbChart";
 import {
   installFakeCanvas,
   installFakeResizeObserver,
   installFrameQueue,
   setElementSize,
   type FakeContext,
-} from "../../support/fakeDom";
-import type { OrbChartConfig, OrbDataInput } from "../../../app/types/types";
+} from "@test/support/fakeDom";
+import type { OrbChartConfig, OrbDataInput } from "@/types/types";
 
 const row = (id: string, value: number): OrbDataInput => ({
   id,

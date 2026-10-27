@@ -1,4 +1,4 @@
-import type { Orb, OrbChartConfig } from "../../types/types";
+import type { Orb, OrbChartConfig } from "@/types/types";
 import {
   HIDDEN_STYLE,
   type Entry,
@@ -10,7 +10,7 @@ import {
   randomId,
   reorderChildren,
   survivorAfter,
-} from "./listDom";
+} from "@/renderer/dom/listDom";
 
 /** The pieces of config the layer reads, looked up on every event. */
 export type LayerConfig = Required<

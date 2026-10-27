@@ -1,16 +1,16 @@
 /**
  * @jest-environment jsdom
  */
-import "../../support/serverGlobals";
+import "@test/support/serverGlobals";
 import { act } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { OrbChart } from "../../../app/react/OrbChart";
+import { OrbChart } from "@/react/OrbChart";
 import {
   installFakeCanvas,
   installFakeResizeObserver,
   installFrameQueue,
-} from "../../support/fakeDom";
+} from "@test/support/fakeDom";
 
 describe("<OrbChart> hydration (AC-2, AC-12)", () => {
   it("hydrates server markup without a mismatch and adds one canvas", async () => {

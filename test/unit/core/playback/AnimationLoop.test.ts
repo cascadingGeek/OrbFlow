@@ -1,8 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import { AnimationLoop } from "../../../../app/core/playback/AnimationLoop";
-import { installFrameQueue } from "../../../support/fakeDom";
+import { AnimationLoop } from "@/core/playback/AnimationLoop";
+import { installFrameQueue } from "@test/support/fakeDom";
 
 describe("AnimationLoop", () => {
   let frames: ReturnType<typeof installFrameQueue>;

@@ -1,9 +1,9 @@
 /**
  * @jest-environment jsdom
  */
-import { FocusCue } from "../../../../app/renderer/dom/FocusCue";
-import { TooltipView } from "../../../../app/renderer/dom/TooltipView";
-import type { Orb } from "../../../../app/types/types";
+import { FocusCue } from "@/renderer/dom/FocusCue";
+import { TooltipView } from "@/renderer/dom/TooltipView";
+import type { Orb } from "@/types/types";
 
 const makeOrb = (id: string, radius = 20): Orb => ({
   id,

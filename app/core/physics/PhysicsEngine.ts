@@ -1,4 +1,4 @@
-import type { Orb, PhysicsConfig } from "../../types/types";
+import type { Orb, PhysicsConfig } from "@/types/types";
 
 /** Buckets orbs by cell so collisions only check neighbors. */
 class SpatialGrid {

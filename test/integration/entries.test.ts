@@ -1,5 +1,5 @@
-import * as core from "../../app/index";
-import * as react from "../../app/react/index";
+import * as core from "@/index";
+import * as react from "@/react/index";
 
 // Source level checks of the public surface (spec 0001), in plain Node with no
 // DOM. The built package is checked by `check:package` and `smoke`.

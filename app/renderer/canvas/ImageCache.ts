@@ -1,4 +1,4 @@
-import type { Orb } from "../../types/types";
+import type { Orb } from "@/types/types";
 
 /**
  * Loads orb images once per URL and keeps the ones that finished loading.

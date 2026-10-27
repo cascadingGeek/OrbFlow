@@ -1,8 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import { TooltipView } from "../../../../app/renderer/dom/TooltipView";
-import type { Orb } from "../../../../app/types/types";
+import { TooltipView } from "@/renderer/dom/TooltipView";
+import type { Orb } from "@/types/types";
 
 const makeOrb = (over: Partial<Orb> = {}): Orb => ({
   id: "a",

@@ -15,8 +15,8 @@ import {
   OrbChart,
   type OrbChartHandle,
   type OrbChartProps,
-} from "../../../app/react/OrbChart";
-import { OrbChart as OrbChartCore } from "../../../app/core/OrbChart";
+} from "@/react/OrbChart";
+import { OrbChart as OrbChartCore } from "@/core/OrbChart";
 import {
   FakeResizeObserver,
   dispatchMouse,
@@ -26,7 +26,7 @@ import {
   setElementSize,
   trackListeners,
   type FakeContext,
-} from "../../support/fakeDom";
+} from "@test/support/fakeDom";
 
 const data = [
   { id: "a", label: "Alpha", value: 40 },

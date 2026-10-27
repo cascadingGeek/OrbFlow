@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openChart, place, recording, resetRecording } from "./helpers";
+import { openChart, place, recording, resetRecording } from "@test/e2e/helpers";
 
 // The bubble look, drawn by the built bundle in real Chrome (spec 0005).
 

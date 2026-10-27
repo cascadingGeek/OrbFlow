@@ -1,4 +1,4 @@
-import type { Orb } from "../../types/types";
+import type { Orb } from "@/types/types";
 
 const CANDIDATES = 8;
 

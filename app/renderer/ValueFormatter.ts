@@ -1,4 +1,4 @@
-import type { Orb, OrbChartConfig } from "../types/types";
+import type { Orb, OrbChartConfig } from "@/types/types";
 
 /**
  * The one place a value turns into text. A throwing `formatValue` is logged

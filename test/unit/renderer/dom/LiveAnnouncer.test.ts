@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { LiveAnnouncer } from "../../../../app/renderer/dom/LiveAnnouncer";
+import { LiveAnnouncer } from "@/renderer/dom/LiveAnnouncer";
 
 describe("LiveAnnouncer (AC-13)", () => {
   let container: HTMLDivElement;

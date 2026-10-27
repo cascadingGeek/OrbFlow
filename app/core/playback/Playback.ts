@@ -1,4 +1,4 @@
-import type { AnimationLoop } from "./AnimationLoop";
+import type { AnimationLoop } from "@/core/playback/AnimationLoop";
 
 /**
  * Wraps the animation loop with two idle reasons: a developer pause, which

@@ -12,7 +12,11 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "jsx": "react-jsx",
-    "isolatedModules": true
+    "isolatedModules": true,
+    "paths": {
+      "@/*": ["./app/*"],
+      "@test/*": ["./test/*"]
+    }
   },
   "include": ["app", "test/unit", "test/integration", "test/support"],
   "exclude": ["node_modules", "dist"]

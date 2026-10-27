@@ -1,5 +1,5 @@
-import type { Orb, OrbChartConfig } from "../../types/types";
-import type { TooltipView } from "./TooltipView";
+import type { Orb, OrbChartConfig } from "@/types/types";
+import type { TooltipView } from "@/renderer/dom/TooltipView";
 
 const TOUCH_TOOLTIP_MS = 2500;
 

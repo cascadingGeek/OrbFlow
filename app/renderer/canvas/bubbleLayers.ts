@@ -2,7 +2,7 @@
  * The drawing steps the bubble recipe is made of. Plain functions on a
  * canvas context, shared by `BubblePainter`.
  */
-import { rgba, type Rgb } from "./color";
+import { rgba, type Rgb } from "@/renderer/canvas/color";
 
 /** Gradient stops: position from 0 to 1, and a CSS color. */
 export type Stops = [number, string][];

@@ -6,16 +6,13 @@ import {
   BURST_MS,
   particle,
   type PopSnapshot,
-} from "../../../../app/renderer/canvas/BurstEffects";
-import type {
-  BubblePainter,
-  Look,
-} from "../../../../app/renderer/canvas/BubblePainter";
+} from "@/renderer/canvas/BurstEffects";
+import type { BubblePainter, Look } from "@/renderer/canvas/BubblePainter";
 import {
   defined,
   installFakeCanvas,
   type FakeContext,
-} from "../../../support/fakeDom";
+} from "@test/support/fakeDom";
 
 describe("BurstEffects (AC-10, AC-12)", () => {
   const look: Look = {

@@ -1,4 +1,4 @@
-import type { OrbDataInput, OrbDataIssue } from "../../types/types";
+import type { OrbDataInput, OrbDataIssue } from "@/types/types";
 
 /** What `DataValidator.validate` hands back. */
 interface ValidationResult {

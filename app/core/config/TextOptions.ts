@@ -1,4 +1,4 @@
-import type { ResolvedConfig } from "./ConfigResolver";
+import type { ResolvedConfig } from "@/core/config/ConfigResolver";
 
 const DEFAULT_FONT = "Inter, system-ui, sans-serif";
 const DEFAULT_MIN_TEXT = 10;

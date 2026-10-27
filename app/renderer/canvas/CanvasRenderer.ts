@@ -1,10 +1,10 @@
-import type { Orb, OrbChartConfig } from "../../types/types";
-import { BubblePainter, type Look } from "./BubblePainter";
-import { BurstEffects } from "./BurstEffects";
-import { ImageCache } from "./ImageCache";
-import { drawFocusRing } from "./focusRing";
-import { ValueFormatter } from "../ValueFormatter";
-import { resolveTheme } from "./color";
+import type { Orb, OrbChartConfig } from "@/types/types";
+import { BubblePainter, type Look } from "@/renderer/canvas/BubblePainter";
+import { BurstEffects } from "@/renderer/canvas/BurstEffects";
+import { ImageCache } from "@/renderer/canvas/ImageCache";
+import { drawFocusRing } from "@/renderer/canvas/focusRing";
+import { ValueFormatter } from "@/renderer/ValueFormatter";
+import { resolveTheme } from "@/renderer/canvas/color";
 
 /** The parts a renderer draws with. Each one is optional for tests. */
 interface RendererParts {

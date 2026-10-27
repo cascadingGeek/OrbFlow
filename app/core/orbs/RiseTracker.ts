@@ -1,5 +1,5 @@
-import type { Orb } from "../../types/types";
-import type { ResolvedConfig } from "../config/ConfigResolver";
+import type { Orb } from "@/types/types";
+import type { ResolvedConfig } from "@/core/config/ConfigResolver";
 
 /** What the tracker reads from the chart, looked up when it is used. */
 export interface RiseSettings {

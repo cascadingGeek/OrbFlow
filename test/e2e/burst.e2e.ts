@@ -6,7 +6,7 @@ import {
   place,
   recording,
   resetRecording,
-} from "./helpers";
+} from "@test/e2e/helpers";
 
 // The burst, ghosts, and idle pops on the loop clock in real Chrome (spec 0005).
 

@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { OrbChart } from "../../../app/core/OrbChart";
+import { OrbChart } from "@/core/OrbChart";
 import {
   FakeResizeObserver,
   defined,
@@ -14,12 +14,8 @@ import {
   tap,
   trackListeners,
   type FakeContext,
-} from "../../support/fakeDom";
-import type {
-  Orb,
-  OrbChartConfig,
-  OrbDataInput,
-} from "../../../app/types/types";
+} from "@test/support/fakeDom";
+import type { Orb, OrbChartConfig, OrbDataInput } from "@/types/types";
 
 const row = (id: string, value: number, extra = {}): OrbDataInput => ({
   id,

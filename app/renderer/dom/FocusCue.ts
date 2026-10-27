@@ -1,5 +1,5 @@
-import type { Orb } from "../../types/types";
-import type { TooltipView } from "./TooltipView";
+import type { Orb } from "@/types/types";
+import type { TooltipView } from "@/renderer/dom/TooltipView";
 
 /** What the focus cue draws with and asks for. */
 interface FocusCueHost {

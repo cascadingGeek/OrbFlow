@@ -1,5 +1,5 @@
-import { Settler, type Steppable } from "../../../../app/core/physics/Settler";
-import type { Orb } from "../../../../app/types/types";
+import { Settler, type Steppable } from "@/core/physics/Settler";
+import type { Orb } from "@/types/types";
 
 const makeOrb = (id: string): Orb => ({
   id,

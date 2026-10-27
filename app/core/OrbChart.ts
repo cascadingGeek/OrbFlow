@@ -1,22 +1,25 @@
-import type { Orb, OrbChartConfig, OrbDataInput } from "../types/types";
-import { ChartView } from "../renderer/ChartView";
-import { ConfigResolver, type ResolvedConfig } from "./config/ConfigResolver";
-import { DataValidator } from "./config/DataValidator";
-import { reportIssues } from "./config/reportIssues";
-import { Teardown } from "./lifecycle/Teardown";
-import { resolveContainer } from "./lifecycle/resolveContainer";
-import { OrbReconciler } from "./orbs/OrbReconciler";
-import { RadiusTweener } from "./orbs/RadiusTweener";
-import { RiseTracker } from "./orbs/RiseTracker";
-import { PhysicsEngine } from "./physics/PhysicsEngine";
-import { Settler } from "./physics/Settler";
-import { AnimationLoop } from "./playback/AnimationLoop";
-import { MotionPreference } from "./playback/MotionPreference";
-import { Playback } from "./playback/Playback";
-import { Redrawer } from "./playback/Redrawer";
-import { ChartPopHost } from "./pop/ChartPopHost";
-import { PopController } from "./pop/PopController";
-import { PopLedger } from "./pop/PopLedger";
+import type { Orb, OrbChartConfig, OrbDataInput } from "@/types/types";
+import { ChartView } from "@/renderer/ChartView";
+import {
+  ConfigResolver,
+  type ResolvedConfig,
+} from "@/core/config/ConfigResolver";
+import { DataValidator } from "@/core/config/DataValidator";
+import { reportIssues } from "@/core/config/reportIssues";
+import { Teardown } from "@/core/lifecycle/Teardown";
+import { resolveContainer } from "@/core/lifecycle/resolveContainer";
+import { OrbReconciler } from "@/core/orbs/OrbReconciler";
+import { RadiusTweener } from "@/core/orbs/RadiusTweener";
+import { RiseTracker } from "@/core/orbs/RiseTracker";
+import { PhysicsEngine } from "@/core/physics/PhysicsEngine";
+import { Settler } from "@/core/physics/Settler";
+import { AnimationLoop } from "@/core/playback/AnimationLoop";
+import { MotionPreference } from "@/core/playback/MotionPreference";
+import { Playback } from "@/core/playback/Playback";
+import { Redrawer } from "@/core/playback/Redrawer";
+import { ChartPopHost } from "@/core/pop/ChartPopHost";
+import { PopController } from "@/core/pop/PopController";
+import { PopLedger } from "@/core/pop/PopLedger";
 
 /** The chart, framework agnostic. */
 export class OrbChart {

@@ -1,5 +1,5 @@
-import type { OrbChartConfig, PhysicsConfig } from "../../types/types";
-import { TextOptions } from "./TextOptions";
+import type { OrbChartConfig, PhysicsConfig } from "@/types/types";
+import { TextOptions } from "@/core/config/TextOptions";
 
 /** An `OrbChartConfig` with every option except the physics ones filled in. */
 export type ResolvedConfig = Required<

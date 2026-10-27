@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { OrbChart } from "../../../app/core/OrbChart";
+import { OrbChart } from "@/core/OrbChart";
 import {
   FakeIntersectionObserver,
   dispatchMouse,
@@ -12,8 +12,8 @@ import {
   installFrameQueue,
   setElementSize,
   type FakeContext,
-} from "../../support/fakeDom";
-import type { OrbChartConfig, OrbDataInput } from "../../../app/types/types";
+} from "@test/support/fakeDom";
+import type { OrbChartConfig, OrbDataInput } from "@/types/types";
 
 const row = (id: string, value = 1): OrbDataInput => ({
   id,

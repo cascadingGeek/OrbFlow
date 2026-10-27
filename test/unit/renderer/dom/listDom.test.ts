@@ -8,9 +8,9 @@ import {
   keyTarget,
   reorderChildren,
   survivorAfter,
-} from "../../../../app/renderer/dom/listDom";
-import type { Orb } from "../../../../app/types/types";
-import { defined } from "../../../support/fakeDom";
+} from "@/renderer/dom/listDom";
+import type { Orb } from "@/types/types";
+import { defined } from "@test/support/fakeDom";
 
 const orb = (over: Partial<Orb> = {}): Orb => ({
   id: "a",

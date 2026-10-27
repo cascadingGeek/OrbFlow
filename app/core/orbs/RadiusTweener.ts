@@ -1,4 +1,4 @@
-import type { Orb } from "../../types/types";
+import type { Orb } from "@/types/types";
 
 /** Which way an orb's radius is moving. */
 type TransitionPhase = "enter" | "update" | "exit";

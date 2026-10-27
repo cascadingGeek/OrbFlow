@@ -5,15 +5,15 @@ import {
   ChartView,
   type ViewConfig,
   type ViewHost,
-} from "../../../app/renderer/ChartView";
+} from "@/renderer/ChartView";
 import {
   FakeResizeObserver,
   installFakeCanvas,
   installFakeResizeObserver,
   setElementSize,
   trackListeners,
-} from "../../support/fakeDom";
-import type { Orb } from "../../../app/types/types";
+} from "@test/support/fakeDom";
+import type { Orb } from "@/types/types";
 
 describe("ChartView", () => {
   let container: HTMLDivElement;

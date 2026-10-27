@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { SPOTS, THREE, onCanvas, openChart, place } from "./helpers";
+import { SPOTS, THREE, onCanvas, openChart, place } from "@test/e2e/helpers";
 
 // Pointer, keyboard, and screen reader behavior in real Chrome (spec 0005).
 

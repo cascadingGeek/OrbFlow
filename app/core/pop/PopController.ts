@@ -1,7 +1,7 @@
-import type { PopSnapshot } from "../../renderer/canvas/BurstEffects";
-import type { Orb } from "../../types/types";
-import type { ResolvedConfig } from "../config/ConfigResolver";
-import type { PopLedger, PopRecord } from "./PopLedger";
+import type { PopSnapshot } from "@/renderer/canvas/BurstEffects";
+import type { Orb } from "@/types/types";
+import type { ResolvedConfig } from "@/core/config/ConfigResolver";
+import type { PopLedger, PopRecord } from "@/core/pop/PopLedger";
 
 /** What popping and restoring need from the chart. */
 export interface PopHost {

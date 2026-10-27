@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { OrbChart } from "../../../app/core/OrbChart";
+import { OrbChart } from "@/core/OrbChart";
 import {
   FakeResizeObserver,
   dispatchMouse,
@@ -10,7 +10,7 @@ import {
   installFrameQueue,
   setElementSize,
   type FakeContext,
-} from "../../support/fakeDom";
+} from "@test/support/fakeDom";
 
 describe("OrbChart (vanilla)", () => {
   let container: HTMLDivElement;

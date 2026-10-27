@@ -1,4 +1,4 @@
-import type { OrbChartConfig } from "../types/types";
+import type { OrbChartConfig } from "@/types/types";
 
 /** Props that carry functions. They never reach `updateConfig`. */
 export const CALLBACK_KEYS = [

@@ -1,4 +1,4 @@
-import type { Orb } from "../../types/types";
+import type { Orb } from "@/types/types";
 
 /** Who showed the tooltip. Only the owner can hide it. */
 type TooltipOwner = "pointer" | "focus";

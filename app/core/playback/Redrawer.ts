@@ -1,4 +1,4 @@
-import type { Playback } from "./Playback";
+import type { Playback } from "@/core/playback/Playback";
 
 /** What the redrawer asks of the chart. All of it runs on the chart's orbs. */
 export interface RedrawHost {

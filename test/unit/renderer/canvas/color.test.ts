@@ -1,8 +1,4 @@
-import {
-  resolveTheme,
-  rgba,
-  toRgb,
-} from "../../../../app/renderer/canvas/color";
+import { resolveTheme, rgba, toRgb } from "@/renderer/canvas/color";
 
 describe("toRgb (AC-5)", () => {
   it.each([

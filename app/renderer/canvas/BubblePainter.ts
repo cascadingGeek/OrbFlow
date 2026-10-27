@@ -1,4 +1,4 @@
-import { LabelFitter } from "./LabelFitter";
+import { LabelFitter } from "@/renderer/canvas/LabelFitter";
 import {
   W,
   circle,
@@ -8,8 +8,13 @@ import {
   glow,
   lens,
   type Stops,
-} from "./bubbleLayers";
-import { rgba, toRgb, type ResolvedTheme, type Rgb } from "./color";
+} from "@/renderer/canvas/bubbleLayers";
+import {
+  rgba,
+  toRgb,
+  type ResolvedTheme,
+  type Rgb,
+} from "@/renderer/canvas/color";
 
 /** One bubble to draw: where, how big, and what it shows. */
 export interface Bubble {

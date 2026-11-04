@@ -1,6 +1,6 @@
 {
   "name": "orbflow",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.0",
   "description": "A lightweight, physics-based orb chart library for visualizing data with smooth animations and realistic orb interactions",
   "type": "module",
   "sideEffects": false,

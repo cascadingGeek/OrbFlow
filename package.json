@@ -78,12 +78,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cascadingGeek/orbflow.git"
+    "url": "git+https://github.com/cascadingGeek/OrbFlow.git"
   },
   "bugs": {
-    "url": "https://github.com/cascadingGeek/orbflow/issues"
+    "url": "https://github.com/cascadingGeek/OrbFlow/issues"
   },
-  "homepage": "https://github.com/cascadingGeek/orbflow#readme",
+  "homepage": "https://github.com/cascadingGeek/OrbFlow#readme",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"
   },

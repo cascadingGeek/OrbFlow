@@ -335,6 +335,8 @@ describe("OrbChart (vanilla)", () => {
       const chart = new OrbChart(container, {
         minRadius: 25,
         enterStyle: "grow",
+        // No grow tween: a radius still at 0 would miss the hover.
+        transitionDuration: 0,
       });
       chart.setData([
         {

@@ -2,7 +2,7 @@
 
 A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas. Bubbles look like real soap bubbles, rise in from below, float, push each other apart, react to clicks and taps, and can burst into droplets and come back. It works for any "how much of each thing" data: tickets by tag, revenue by product, votes per feature, or market moves. The core has zero runtime dependencies, and a React component is included.
 
-> **Status: in development, not released yet.** Version 1.0 is not on npm yet, so `npm install orbflow` and the CDN link below will work once it is published. Until then you can [build it from source](#before-the-npm-release-build-from-source). Follow the progress on [Threads](https://www.threads.com/@cascadinggeek).
+> **Status: public beta.** `npm install orbflow@beta` gets the latest beta. The API can still change before 1.0, so please [open an issue](https://github.com/cascadingGeek/OrbFlow/issues) if anything is confusing or broken. Follow the progress on [Threads](https://www.threads.com/@cascadinggeek).
 
 **Contents:** [Features](#features) · [Installation](#installation) · [Quick start](#quick-start) · [Next.js](#nextjs) · [Showing details](#showing-details-when-a-bubble-is-clicked) · [Popping](#popping-bubbles) · [Formatting values](#formatting-values) · [Recipes](#recipes) · [API reference](#api-reference) · [Performance](#performance) · [Known limitations](#known-limitations) · [Development](#development) · [Roadmap](#roadmap)
 
@@ -58,32 +58,34 @@ A lightweight, physics based bubble (orb) chart for the browser, drawn on canvas
 ## Installation
 
 ```bash
-npm install orbflow
+npm install orbflow@beta
 # or
-yarn add orbflow
+yarn add orbflow@beta
 # or
-pnpm add orbflow
+pnpm add orbflow@beta
 ```
+
+Drop `@beta` once 1.0 is out.
 
 React (18 or 19) is an optional peer dependency: you only need it for `orbflow/react`. The core has no dependencies at all.
 
-### Before the npm release: build from source
+### Build from source
 
 ```bash
 git clone https://github.com/cascadingGeek/OrbFlow.git
 cd OrbFlow
 npm install
 npm run build
-npm pack            # creates orbflow-1.0.0.tgz
+npm pack            # creates orbflow-<version>.tgz
 ```
 
 Then, in your app:
 
 ```bash
-npm install /path/to/OrbFlow/orbflow-1.0.0.tgz
+npm install /path/to/OrbFlow/orbflow-<version>.tgz
 ```
 
-The imports are the same as after the release (`orbflow` and `orbflow/react`).
+The imports are the same as from npm (`orbflow` and `orbflow/react`).
 
 ## Quick start
 
@@ -587,7 +589,7 @@ npm run smoke          # packs the tarball and installs it into test projects
 
 ## Roadmap
 
-Before 1.0: docs and API reference, runnable examples, a live demo page, a speed pass for large charts (including pausing off screen), and the npm release.
+Before 1.0: docs and API reference, runnable examples, a live demo page, a speed pass for large charts (including pausing off screen), and the 1.0.0 release.
 
 Version 1.0 supports vanilla JavaScript and React. More frameworks arrive one per minor release, with no breaking changes:
 
